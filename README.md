@@ -16,6 +16,11 @@ Forest3D eliminates the manual overhead of building realistic simulation environ
 LiDAR point cloud (RViz) accurately captures the 3D assets, confirming Forest3D outputs are ready for real sensor-based simulation workflows.
 <video src="https://github.com/user-attachments/assets/952f6a1d-dbc8-47dd-bce7-383bfa85e7ca" autoplay loop muted playsinline width="100%"/>
 
+> **Need wheel-soil terramechanics?** A terramechanics-aware version
+> (real-time Bekker-Wong wheel-soil forces, used in the IFIT 2026 paper)
+> lives on the [`IFIT-2026` branch](https://github.com/unitsSpaceLab/Forest3D/tree/IFIT-2026).
+> This `main` branch is the lighter environment-generation pipeline (no terramechanics).
+
 ## Tutorial
 
 [![Watch the tutorial](https://img.youtube.com/vi/fLvci8LoMeY/maxresdefault.jpg)](https://youtu.be/fLvci8LoMeY)
