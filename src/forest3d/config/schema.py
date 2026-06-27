@@ -160,6 +160,45 @@ class GroundConfig(BaseModel):
         return None if v is None else Path(v).expanduser().resolve()
 
 
+# Procedural terrain presets. Keep in sync with core/terraingen.py::PRESETS.
+PRESET_NAMES = ("hilly", "flat", "mountainous", "valley", "lakeland")
+
+
+class TerrainGenConfig(BaseModel):
+    """Seeded procedural terrain (DEM) synthesis configuration.
+
+    A preset supplies feature defaults; any field set here overrides the preset.
+    Same ``seed`` + params -> same landform (reproducible VIO/lidar scenarios).
+    Distances are in metres.
+    """
+
+    seed: int = Field(default=0, description="RNG seed; same seed -> same landform.")
+    preset: str = Field(default="hilly", description="hilly | flat | mountainous | valley | lakeland.")
+    resolution: int = Field(default=192, ge=32, le=512, description="DEM pixels per side (== mesh density).")
+    pixel_m: float = Field(default=2.5, gt=0, description="Ground sample distance (metres/pixel).")
+    # feature overrides (None -> preset default)
+    amplitude_m: Optional[float] = Field(default=None, ge=0.0, description="fBm base relief (metres).")
+    roughness: Optional[float] = Field(default=None, gt=0.0, le=1.0, description="Per-octave amplitude falloff.")
+    octaves: Optional[int] = Field(default=None, ge=1, le=10, description="fBm octave count.")
+    feature_m: Optional[float] = Field(default=None, gt=0.0, description="Largest hill feature size (metres).")
+    ridged: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Ridged-noise blend (sharper valleys/ridges).")
+    slope_m: Optional[float] = Field(default=None, ge=0.0, description="Planar tilt added across the map (metres).")
+    valley: Optional[bool] = Field(default=None, description="Carve a central trough.")
+    n_peaks: Optional[int] = Field(default=None, ge=0, le=50, description="Number of Gaussian peaks/mounts.")
+    n_basins: Optional[int] = Field(default=None, ge=0, le=20, description="Number of basins (mini-lakes).")
+    n_creeks: Optional[int] = Field(default=None, ge=0, le=10, description="Number of carved creeks.")
+    edge_taper: float = Field(default=0.12, ge=0.0, le=0.5, description="Border relief taper fraction (avoid cliff edges).")
+    smooth_sigma: float = Field(default=0.8, ge=0.0, le=5.0, description="Final anti-facet Gaussian smooth (pixels).")
+    scale_factor: float = Field(default=1.0, gt=0.0, description="Mirror of TerrainConfig.scale_factor (for lake XY report).")
+
+    @field_validator("preset")
+    @classmethod
+    def _valid_preset(cls, v):
+        if v not in PRESET_NAMES:
+            raise ValueError(f"preset must be one of {PRESET_NAMES}, got {v!r}")
+        return v
+
+
 class TerrainConfig(BaseModel):
     """Terrain generation configuration."""
 
