@@ -1,0 +1,14 @@
+# Derived image: Forest3D + NVIDIA EGL vendor ICD so headless ogre2 renders on the
+# GPU instead of silently falling back to llvmpipe (software). See SPIKE_BRIEF.md §5
+# and AutonomyTests docs/sim-debugging-notes.md #8.
+# Build: docker build -t forest3d:egl -f docker/Dockerfile.egl .
+FROM forest3d
+USER root
+# Fix 1: NVIDIA EGL vendor ICD (GPU render, see above).
+RUN mkdir -p /usr/share/glvnd/egl_vendor.d && \
+    printf '{\n    "file_format_version" : "1.0.0",\n    "ICD" : {\n        "library_path" : "libEGL_nvidia.so.0"\n    }\n}\n' \
+      > /usr/share/glvnd/egl_vendor.d/10_nvidia.json
+# Fix 2: the base image ships NumPy 2.x, but the system GDAL (osgeo) was built against
+# NumPy 1.x -> "_ARRAY_API not found" on `terrain`. Pin NumPy <2 to match GDAL's ABI.
+RUN pip3 install --no-cache-dir 'numpy<2'
+USER forest3d

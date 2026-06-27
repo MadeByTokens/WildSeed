@@ -42,3 +42,6 @@ models/
 worlds/
 Blender-Assets/*.blend
 Blender-Assets/**/*.blend
+
+# Spike raw render data (regenerable)
+frames/
