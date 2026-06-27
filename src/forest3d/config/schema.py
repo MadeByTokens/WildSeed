@@ -1,7 +1,7 @@
 """Configuration schema using Pydantic for validation."""
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -103,6 +103,63 @@ class ResolvedCategory(BaseModel):
     skip_foliage_decimation: bool
 
 
+class GroundLayerSpec(BaseModel):
+    """One overlay layer in a patchy ground composite (patch or trail)."""
+
+    material: str = Field(description="Material key (texture-pack id, e.g. ambientCG 'Gravel023').")
+    kind: str = Field(default="patch", description="'patch' (organic blobs) or 'trail' (path).")
+    tile_m: float = Field(default=3.0, gt=0, description="Tiling period of this material, metres.")
+    # patch params
+    coverage: float = Field(default=0.08, ge=0.0, le=1.0, description="Patch area fraction.")
+    scale_m: float = Field(default=15.0, gt=0, description="Patch feature size, metres.")
+    # trail params
+    width_m: float = Field(default=2.5, gt=0, description="Trail width, metres.")
+    count: int = Field(default=1, ge=1, le=20, description="Number of trails (patch count is implicit via noise).")
+    waypoints: Optional[list] = Field(
+        default=None, description="Explicit trail waypoints as [[u,v],...] in 0..1; else seeded random walk."
+    )
+
+    @field_validator("kind")
+    @classmethod
+    def _valid_kind(cls, v):
+        if v not in ("patch", "trail"):
+            raise ValueError("kind must be 'patch' or 'trail'")
+        return v
+
+
+class GroundConfig(BaseModel):
+    """Procedural ground material configuration (uniform or seeded patchy)."""
+
+    mode: str = Field(default="uniform", description="'uniform' (tiled single texture) or 'patchy' (baked composite).")
+    biome: str = Field(default="grassland", description="Preset: grassland | desert | gravel | snow.")
+    seed: int = Field(default=0, description="RNG seed; same seed -> same ground (reproducible scenarios).")
+    resolution: int = Field(default=4096, ge=512, le=16384, description="Patchy bake resolution (px).")
+    randomize: bool = Field(default=True, description="Jitter patch coverage/size by seed.")
+    base_material: Optional[str] = Field(default=None, description="Override the biome's base material key.")
+    uniform_tile: float = Field(default=8.0, gt=0, description="Uniform-mode UV tiling (repeats across terrain).")
+    texture_root: Optional[Path] = Field(
+        default=None, description="Directory holding CC0 ground texture packs (default: Blender-Assets/soil)."
+    )
+    layers: Optional[List[GroundLayerSpec]] = Field(
+        default=None, description="Override the biome's overlay layers."
+    )
+    water_level: Optional[float] = Field(
+        default=None, description="If set, add a flat water plane at this terrain-Z height (metres)."
+    )
+
+    @field_validator("mode")
+    @classmethod
+    def _valid_mode(cls, v):
+        if v not in ("uniform", "patchy"):
+            raise ValueError("mode must be 'uniform' or 'patchy'")
+        return v
+
+    @field_validator("texture_root", mode="before")
+    @classmethod
+    def _expand_root(cls, v):
+        return None if v is None else Path(v).expanduser().resolve()
+
+
 class TerrainConfig(BaseModel):
     """Terrain generation configuration."""
 
@@ -115,6 +172,9 @@ class TerrainConfig(BaseModel):
     )
     material_name: str = Field(
         default="Terrain/Ground", description="Name for the generated material"
+    )
+    ground: Optional[GroundConfig] = Field(
+        default=None, description="Procedural ground material (uniform/patchy); None = legacy/extracted texture."
     )
 
     @field_validator("texture_blend", mode="before")

@@ -11,4 +11,7 @@ RUN mkdir -p /usr/share/glvnd/egl_vendor.d && \
 # Fix 2: the base image ships NumPy 2.x, but the system GDAL (osgeo) was built against
 # NumPy 1.x -> "_ARRAY_API not found" on `terrain`. Pin NumPy <2 to match GDAL's ABI.
 RUN pip3 install --no-cache-dir 'numpy<2'
+# Pillow: required by the procedural ground compositor (core/ground.py) for PBR
+# texture read/compose/write. Base image has no imaging lib.
+RUN pip3 install --no-cache-dir 'Pillow>=9.0.0'
 USER forest3d
