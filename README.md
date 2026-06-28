@@ -77,16 +77,32 @@ forest3d generate   --density '{"tree":35,"rock":12}' --seed 7    # populate
 
 ![demo scenarios](spike/scenarios_gallery.png)
 
-Five ready-made demo scenarios (two snow) — temperate hills, savanna flats,
-lakeland wetland, alpine snow, winter forest — with copy-paste commands and the
-randomization guide:
+Six ready-made demo scenarios (two snow) — **temperate hills, savanna flats,
+lakeland wetland, alpine snow, winter forest, coastal dune** — each with a 3-layer
+structure (canopy trees / understory shrubs / grass + flowers) built from **CC0
+Poly Haven assets** and reproduced with **no account or login**:
+
+```bash
+python3 spike/build_assets.py       # fetch+convert the CC0 asset set (idempotent)
+python3 spike/build_scenarios.py    # build all 6 + render spike/scenarios_gallery.png
+```
+
+Density is fully tunable per category — `forest3d generate --density
+'{"tree":80,"rock":6,"bush":40,"grass":120}' --seed 7` — same `--seed` → identical world.
 
 - **[docs/TUTORIAL.md](docs/TUTORIAL.md)** — build & randomize a world in 5 minutes
 - **[docs/TERRAIN_GENERATOR.md](docs/TERRAIN_GENERATOR.md)** — `terraingen` reference (presets, all knobs, lakes)
-- **[docs/SCENARIOS.md](docs/SCENARIOS.md)** — the 5 demo scenarios, reproducible
+- **[docs/SCENARIOS.md](docs/SCENARIOS.md)** — the 6 demo scenarios + density tuning
+- **[docs/REALISTIC_DEMOS_PLAN.md](docs/REALISTIC_DEMOS_PLAN.md)** — how the reproducible asset set is sourced
 
-All demo assets are CC0 (Poly Haven / ambientCG); credits in
-[spike/ASSET_REGISTRY.md](spike/ASSET_REGISTRY.md).
+### Reproducibility
+
+The Docker image is **version-pinned** so a rebuild can't drift when an upstream
+library changes: base image by digest, `gz-harmonic` + Blender 4.2.3 (checksum-verified)
++ all Python deps frozen in [`docker/constraints.txt`](docker/constraints.txt). The demo
+asset set is pinned in [`assets/manifest.yaml`](assets/manifest.yaml) with sha256s in
+`assets/manifest.lock.yaml`, fetched credential-free from Poly Haven. All demo assets are
+CC0; credits in [spike/ASSET_REGISTRY.md](spike/ASSET_REGISTRY.md).
 
 ## Features
 

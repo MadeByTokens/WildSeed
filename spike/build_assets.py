@@ -3,8 +3,10 @@
 For each CC0 Poly Haven asset: fetch (native .blend, credential-free) -> normalize
 (recenter/base-z0/scale/LOD+variant select/alpha->MASK) -> convert (Gazebo model).
 Idempotent: skips any stage whose output already exists. Writes
-assets/manifest.lock.yaml with each normalized .blend's sha256 so a rebuild is
-verifiably identical (the "frozen" guarantee).
+assets/manifest.lock.yaml with each SOURCE Poly Haven .blend's sha256 (byte-stable
+from their CDN) so a rebuild pulls the verifiably-same source assets (the "frozen"
+guarantee). The normalized/converted outputs are not byte-reproducible because Blender
+embeds timestamps/pointers, but they are deterministic in content.
 
 Run INSIDE forest3d:egl (has Blender + forest3d + network):
   docker run --rm -v "$PWD:/workspace" --entrypoint bash forest3d:egl-v1 -c \
@@ -48,6 +50,21 @@ def model_ready(cat, aid):
     return os.path.exists(f"models/{cat}/{aid}/mesh/{aid}.glb")
 
 
+def source_sha(cat, aid):
+    """sha256 of the SOURCE Poly Haven .blend (byte-stable from their CDN).
+
+    We hash the download, not the normalized/converted output: Blender embeds
+    non-deterministic data (timestamps, pointers) so a re-normalized .blend is never
+    byte-identical even from the same source. The source hash is the meaningful
+    "frozen asset" guarantee.
+    """
+    raw_dir = f"Blender-Assets/{cat}/_raw_{aid}"
+    if not os.path.isdir(raw_dir):
+        return None
+    blends = sorted(f for f in os.listdir(raw_dir) if f.endswith(".blend"))
+    return sha256(os.path.join(raw_dir, blends[0])) if blends else None
+
+
 def main():
     man = yaml.safe_load(open(MANIFEST))
     # Merge into any existing lock so a partial (filtered) run doesn't drop other
@@ -71,7 +88,7 @@ def main():
 
         if model_ready(cat, aid) and os.path.exists(norm):
             print("  skip (model exists)", flush=True)
-            lock[aid] = {"category": cat, "sha256": sha256(norm), "source": f"polyhaven:{aid}"}
+            lock[aid] = {"category": cat, "sha256": source_sha(cat, aid), "source": f"polyhaven:{aid}"}
             skip.append(aid)
             continue
 
@@ -103,12 +120,12 @@ def main():
 
         sz = os.path.getsize(f"models/{cat}/{aid}/mesh/{aid}.glb") / 1e6
         print(f"  OK -> models/{cat}/{aid} (visual {sz:.1f} MB)", flush=True)
-        lock[aid] = {"category": cat, "sha256": sha256(norm), "source": f"polyhaven:{aid}",
+        lock[aid] = {"category": cat, "sha256": source_sha(cat, aid), "source": f"polyhaven:{aid}",
                      "visual_mb": round(sz, 1)}
         ok.append(aid)
 
     with open(LOCK, "w") as f:
-        yaml.safe_dump({"note": "sha256 of each normalized source .blend (CC0 Poly Haven)",
+        yaml.safe_dump({"note": "sha256 of each SOURCE Poly Haven .blend download (CC0; byte-stable from their CDN)",
                         "assets": lock}, f, sort_keys=True)
     print(f"\nDONE ok={len(ok)} skip={len(skip)} fail={len(fail)}", flush=True)
     if fail:
