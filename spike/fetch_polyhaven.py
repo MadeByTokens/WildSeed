@@ -1,8 +1,15 @@
-"""Download a Poly Haven model's glTF bundle (gltf + bin + textures) into a dir.
+"""Download a Poly Haven model bundle (gltf or native blend + textures) into a dir.
 
-All Poly Haven assets are CC0. Usage:
-    python3 spike/fetch_polyhaven.py <asset_id> <res> <out_dir>
+All Poly Haven assets are CC0 (credential-free public API -> reproducible). Usage:
+    python3 spike/fetch_polyhaven.py <asset_id> <res> <out_dir> [fmt=gltf|blend]
 e.g. python3 spike/fetch_polyhaven.py fir_sapling 1k Blender-Assets/tree/_raw_fir_sapling
+     python3 spike/fetch_polyhaven.py shrub_01 2k Blender-Assets/bush/_raw_shrub_01 blend
+
+Prefer `blend` for foliage: Poly Haven's glTF omits the foliage alpha map (leaves
+re-export OPAQUE), but the native .blend wires opacity in the material, so the
+normalizer's alpha->MASK pattern triggers automatically. See ASSET_REGISTRY.md.
+
+Prints `MAIN_GLTF <path>` (gltf) or `MAIN_BLEND <path>` (blend) for the caller.
 """
 import json
 import os
@@ -12,7 +19,7 @@ import urllib.request
 UA = {"User-Agent": "Mozilla/5.0 (Forest3D asset fetch; CC0)"}
 
 
-def _get(url, dest=None, timeout=120):
+def _get(url, dest=None, timeout=180):
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = r.read()
@@ -23,10 +30,14 @@ def _get(url, dest=None, timeout=120):
 
 
 asset, res, out = sys.argv[1], sys.argv[2], sys.argv[3]
+fmt = sys.argv[4] if len(sys.argv) > 4 else "gltf"
 api = f"https://api.polyhaven.com/files/{asset}"
 files = json.loads(_get(api))
 
-node = files["gltf"][res]["gltf"]
+# Pick the requested format, falling back to the highest available <= requested res.
+fmt_files = files[fmt]
+res_use = res if res in fmt_files else sorted(fmt_files.keys())[0]
+node = fmt_files[res_use][fmt]
 os.makedirs(out, exist_ok=True)
 main_name = node["url"].split("/")[-1]
 jobs = [(node["url"], os.path.join(out, main_name))]
@@ -40,4 +51,5 @@ for url, dest in jobs:
     print("get", dest)
     _get(url, dest)
 
-print("MAIN_GLTF", os.path.join(out, main_name))
+tag = "MAIN_BLEND" if fmt == "blend" else "MAIN_GLTF"
+print(tag, os.path.join(out, main_name))

@@ -1,0 +1,61 @@
+# Forest3D demo asset manifest — the single source of truth for the reproducible
+# demo asset set. Every asset is CC0 from Poly Haven (credential-free public API), so
+# `forest3d assets fetch` (spike/build_assets.py) reproduces the exact set inside the
+# Docker image with NO account/login. Run it to (re)build models/ from scratch.
+#
+# Per asset:
+#   id       Poly Haven asset id (https://polyhaven.com/a/<id>)
+#   category tree | rock | bush | grass   (Forest3D placement category)
+#   res      texture resolution to fetch (1k/2k/4k) — smaller = lighter worlds
+#   lod      Poly Haven LOD level to keep (0=highest detail/heaviest; '-'=auto/highest)
+#   scale    extra uniform scale applied at normalize (real-world size tweak)
+#   variant  for kit assets (shrub/grass clumps a,b,c...) which variant to keep ('-'=first)
+#   biomes   which demo scenarios use it
+#
+# All Poly Haven assets are CC0 (public domain). Credit appreciated: https://polyhaven.com
+# After fetch, spike/build_assets.py writes assets/manifest.lock.yaml with each source
+# .blend's sha256 so a rebuild is verifiably identical (the "frozen" guarantee).
+
+assets:
+  # ---- trees (canopy) — LOD1/2 to keep worlds light (LOD0 made one tree 102 MB) ----
+  - {id: island_tree_01,   category: tree,  res: 2k, lod: 1, scale: 1.0, biomes: [temperate, wetland, coastal]}
+  - {id: island_tree_02,   category: tree,  res: 2k, lod: 1, scale: 1.0, biomes: [temperate]}
+  - {id: jacaranda_tree,   category: tree,  res: 2k, lod: 1, scale: 1.0, biomes: [temperate, wetland]}
+  - {id: quiver_tree_01,   category: tree,  res: 2k, lod: 1, scale: 1.0, biomes: [savanna]}
+  - {id: fir_tree_01,      category: tree,  res: 2k, lod: 1, scale: 1.0, biomes: [alpine, winter]}
+  - {id: pine_tree_01,     category: tree,  res: 2k, lod: 1, scale: 1.0, biomes: [alpine, winter]}
+  - {id: fir_sapling,      category: tree,  res: 1k, lod: 0, scale: 4.0, biomes: [alpine, winter]}
+  - {id: dead_tree_trunk_02, category: tree, res: 1k, lod: 0, scale: 1.0, biomes: [winter, alpine]}
+
+  # ---- rocks ----
+  - {id: boulder_01,             category: rock, res: 2k, lod: 0, scale: 1.0, biomes: [temperate, alpine, winter]}
+  - {id: rock_07,                category: rock, res: 2k, lod: 0, scale: 1.0, biomes: [temperate, wetland]}
+  - {id: namaqualand_boulder_04, category: rock, res: 2k, lod: 0, scale: 1.0, biomes: [savanna, alpine]}
+  - {id: namaqualand_rocks_01,   category: rock, res: 1k, lod: 0, scale: 1.0, biomes: [savanna, temperate, alpine]}
+  - {id: coast_rocks_01,         category: rock, res: 2k, lod: 0, scale: 1.0, biomes: [coastal]}
+  - {id: sand_rocks_small_01,    category: rock, res: 1k, lod: 0, scale: 1.0, biomes: [coastal, savanna]}
+
+  # ---- bushes (understory) — kit assets, keep one variant each ----
+  - {id: shrub_01,            category: bush, res: 1k, lod: 0, scale: 1.0, variant: a, biomes: [temperate, coastal]}
+  - {id: shrub_03,            category: bush, res: 1k, lod: 0, scale: 1.0, variant: a, biomes: [temperate, wetland]}
+  - {id: fern_02,             category: bush, res: 1k, lod: 0, scale: 1.0, variant: a, biomes: [wetland, alpine, coastal]}
+  - {id: wild_rooibos_bush,   category: bush, res: 1k, lod: 0, scale: 1.0, biomes: [savanna]}
+  - {id: crystalline_iceplant, category: bush, res: 1k, lod: 0, scale: 1.0, biomes: [coastal, savanna]}
+
+  # ---- grass / ground cover (flowers count as grass-category scatter) ----
+  - {id: grass_medium_01, category: grass, res: 1k, lod: 0, scale: 1.0, variant: a, biomes: [temperate, alpine, winter]}
+  - {id: grass_medium_02, category: grass, res: 1k, lod: 0, scale: 1.0, variant: a, biomes: [temperate, wetland]}
+  - {id: grass_bermuda_01, category: grass, res: 1k, lod: 0, scale: 1.0, variant: a, biomes: [coastal, temperate]}
+  - {id: flower_gazania,  category: grass, res: 1k, lod: 0, scale: 1.0, variant: a, biomes: [savanna]}
+
+# Per-demo palettes — which converted models each scenario is allowed to scatter.
+# The demo builder (spike/build_scenarios.py) stashes everything NOT listed for a biome
+# so `generate` only picks from these. Density (tree/rock/bush/grass counts) is the
+# user-tunable knob, set per demo in the builder and overridable via `generate --density`.
+biomes:
+  temperate: {trees: [island_tree_01, island_tree_02, jacaranda_tree], bushes: [shrub_01, shrub_03], grasses: [grass_medium_01, grass_medium_02, grass_bermuda_01], rocks: [boulder_01, rock_07, namaqualand_rocks_01], ground: grassland}
+  savanna:   {trees: [quiver_tree_01], bushes: [wild_rooibos_bush, crystalline_iceplant], grasses: [flower_gazania], rocks: [namaqualand_boulder_04, namaqualand_rocks_01, sand_rocks_small_01], ground: desert}
+  wetland:   {trees: [island_tree_01, jacaranda_tree], bushes: [fern_02, shrub_03], grasses: [grass_medium_01, grass_medium_02], rocks: [rock_07], ground: grassland}
+  alpine:    {trees: [fir_tree_01, pine_tree_01, fir_sapling, dead_tree_trunk_02], bushes: [fern_02], grasses: [grass_medium_01], rocks: [boulder_01, namaqualand_boulder_04, namaqualand_rocks_01], ground: snow}
+  winter:    {trees: [fir_tree_01, pine_tree_01, fir_sapling, dead_tree_trunk_02], bushes: [], grasses: [grass_medium_01], rocks: [boulder_01, namaqualand_rocks_01], ground: snow}
+  coastal:   {trees: [island_tree_01], bushes: [shrub_01, fern_02, crystalline_iceplant], grasses: [grass_bermuda_01], rocks: [coast_rocks_01, sand_rocks_small_01], ground: desert}

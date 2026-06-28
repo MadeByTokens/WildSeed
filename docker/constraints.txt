@@ -1,0 +1,27 @@
+# Frozen Python dependency versions — the exact set that works in forest3d:egl.
+# Captured from the working image on 2026-06-28 (Python 3.10.12, Ubuntu 22.04).
+#
+# Used by docker/Dockerfile via `pip install -c docker/constraints.txt` so a rebuild
+# installs THESE versions, not whatever is newest on PyPI. Update deliberately:
+# bump a pin, rebuild, verify the demos still render, commit.
+#
+# numpy is the load-bearing one: the system GDAL (osgeo) is built against the NumPy 1.x
+# C-ABI, so numpy>=2 breaks `forest3d terrain` with "_ARRAY_API not found".
+
+# direct deps (mirror pyproject.toml)
+numpy==1.26.4
+scipy==1.15.3
+numpy-stl==4.0.0
+Pillow==12.2.0
+PyYAML==6.0.3
+click==8.4.2
+rich==15.0.0
+pydantic==2.13.4
+
+# transitive deps pinned for a fully reproducible resolve
+pydantic_core==2.46.4
+annotated-types==0.7.0
+typing_extensions==4.15.0
+markdown-it-py==4.2.0
+mdurl==0.1.2
+Pygments==2.20.0

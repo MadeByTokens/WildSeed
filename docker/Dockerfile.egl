@@ -2,16 +2,20 @@
 # GPU instead of silently falling back to llvmpipe (software). See SPIKE_BRIEF.md §5
 # and AutonomyTests docs/sim-debugging-notes.md #8.
 # Build: docker build -t forest3d:egl -f docker/Dockerfile.egl .
-FROM forest3d
+#   (to build on a specific base: --build-arg BASE=forest3d:repro-test)
+ARG BASE=forest3d
+FROM ${BASE}
 USER root
 # Fix 1: NVIDIA EGL vendor ICD (GPU render, see above).
 RUN mkdir -p /usr/share/glvnd/egl_vendor.d && \
     printf '{\n    "file_format_version" : "1.0.0",\n    "ICD" : {\n        "library_path" : "libEGL_nvidia.so.0"\n    }\n}\n' \
       > /usr/share/glvnd/egl_vendor.d/10_nvidia.json
-# Fix 2: the base image ships NumPy 2.x, but the system GDAL (osgeo) was built against
-# NumPy 1.x -> "_ARRAY_API not found" on `terrain`. Pin NumPy <2 to match GDAL's ABI.
-RUN pip3 install --no-cache-dir 'numpy<2'
+# NumPy is pinned to 1.26.4 in docker/constraints.txt (the base image already installs
+# that), because the system GDAL (osgeo) is built against the NumPy 1.x C-ABI and
+# numpy>=2 breaks `terrain` with "_ARRAY_API not found". Re-assert the exact pin here so
+# this layer is self-documenting and safe even if rebuilt against a drifted base.
+RUN pip3 install --no-cache-dir 'numpy==1.26.4'
 # Pillow: required by the procedural ground compositor (core/ground.py) for PBR
-# texture read/compose/write. Base image has no imaging lib.
-RUN pip3 install --no-cache-dir 'Pillow>=9.0.0'
+# texture read/compose/write. Pinned to the known-good version.
+RUN pip3 install --no-cache-dir 'Pillow==12.2.0'
 USER forest3d

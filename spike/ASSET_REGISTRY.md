@@ -67,3 +67,37 @@ regenerable from these ids + scripts).
 > Redistribution note: Fab + BlenderKit-RF forbid publishing the **raw** assets. Fine while we
 > don't publish; if this repo (or generated worlds bundling the `.glb`) is ever made public, those
 > assets must be swapped for CC0 or removed. Track which is which in the USED table's `license` col.
+
+## Variety upgrade plan — closing the gap to the upstream screenshots (2026-06-28)
+
+**Why our worlds look thinner than upstream's `Screenshot from 2026-01-*.png`:** upstream ships
+**no** assets (all `Blender-Assets/` are `.gitkeep`; `.gitignore` blocks `*.blend`). Git history
+(`unitsSpaceLab` commits `7c3c7bf5`→`5461dc8d`) shows they rendered with **commercial** libraries:
+**Maxtree "Plant Models Vol. 60"** (`MT_PM_V60_*`, ≥14 photoscanned species — maples, alder, agave,
+rockrose, real turf grasses) + **Quixel Megascans** rocks/sand (`photoscanned-rock-03`, `sand-dune`,
+`coast-land-rocks-04`). Theme = coastal/Mediterranean dune. Those blobs are recoverable from history
+but are **not redistributable** → we match the *look* with CC0 instead. The gap is asset **variety**,
+not the pipeline.
+
+**Confirmed 2026 licensing (verified 2026-06-28):**
+- **Quixel Megascans** — PAID since 2025-01-01 (only a small rotating free set). Fab Standard License
+  forbids standalone redistribution of raw `.blend`/`.fbx` (only embedded in a build/render). **Not
+  repo-shippable.** EULA: https://www.fab.com/eula
+- **BlenderKit** — free assets are **CC0 _or_ Royalty-Free**. Only the **CC0** subset is
+  redistributable; RF forbids it. Filter strictly to CC0. https://www.blenderkit.com/docs/licenses/
+
+**Recommended CC0 sources, ranked for VARIETY + redistributable-in-MIT-repo:**
+
+| rank | source | what | license | variety | notes |
+|------|--------|------|---------|---------|-------|
+| 1 | **ffish.asia / floraZia** (Sketchfab) · https://sketchfab.com/ffishAsia-and-floraZia | photoscanned real organisms incl. **land plants/grasses/weeds with scientific binomial names** (e.g. *Beckmannia syzigachne*, *Hordeum vulgare*) | **CC0** (Kyushu Univ. / QOU public-domain catalog) | **3,026 models** | **THE variety fix.** Downloadable glTF/USDZ + original (.obj/.fbx/.blend). Free Sketchfab account, ~50 dl/day rate limit. Real species → photoreal like Maxtree, but CC0. |
+| 2 | **Sapling Tree Gen** (built-in) + **geometry-nodes grass** | procedural windswept coastal trees, marram-grass clumps, shrubs | code GPL; **generated mesh output is yours** → ship as CC0/MIT | **infinite** | zero licensing risk; best for grass clumps + bent coastal trees. Geometry-nodes templates must themselves be CC0/self-authored. |
+| 3 | **Poly Haven** · https://polyhaven.com/models | photoscanned rocks/boulders, tree trunks, some veg | **CC0** | ~100–150 nature models | already in pipeline; the redistributable Megascans-rock equivalent. Best for hero rocks + sand/coastal-clay material. |
+| 4 | **ambientCG** · https://ambientcg.com | 2,000+ PBR **textures** (sand, gravel, coastal clay, bark) + a few debris meshes | **CC0** | textures only | already in pipeline for terrain/retexturing. |
+| — | Gazebo Fuel · https://app.gazebosim.org/fuel/models | sim models | mixed (often **CC-BY/CC-BY-SA** — MIT-compatible *with attribution*, verify per asset) | ~50–100, low-poly | verify+credit each; mostly low-poly. |
+| ✗ | Megascans/Fab, BlenderKit-RF, Grass-Free addon (no formal license) | — | non-redistributable / legal gray area | — | do NOT ship raw. |
+
+**Next action:** harvest a coastal/Mediterranean species set from ffish.asia (grasses + shrubs to
+mirror the Maxtree list), run each through the existing `import_gltf.py` (recenter/base-to-z0/foliage
+alpha→MASK) → `forest3d convert`, log each in the USED table with its Sketchfab URL + CC0. Augment
+sparse categories (windswept trees, dense marram grass) procedurally via Sapling/geometry-nodes.

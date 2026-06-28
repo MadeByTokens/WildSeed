@@ -28,15 +28,20 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 
+# Library deps use lower bounds for install-friendliness, but with upper caps on the
+# packages whose major versions have broken us before — numpy 2.x breaks the system
+# GDAL ABI, pydantic 3.x / click 9.x would be breaking majors. For a *fully* frozen,
+# reproducible install (the Docker image), see docker/constraints.txt which hard-pins
+# every version with `==`.
 dependencies = [
-    "numpy>=1.21.0",
+    "numpy>=1.21.0,<2",
     "scipy>=1.7.0",
     "numpy-stl>=2.16.0",
     "Pillow>=9.0.0",
     "PyYAML>=6.0",
-    "click>=8.0.0",
+    "click>=8.0.0,<9",
     "rich>=12.0.0",
-    "pydantic>=2.0.0",
+    "pydantic>=2.0.0,<3",
 ]
 
 [project.optional-dependencies]
