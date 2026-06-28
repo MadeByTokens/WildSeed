@@ -99,6 +99,7 @@ if os.environ.get("WATER") == "1":
     for w in waters:
         parts.append(f"    <include><name>{w}</name><uri>model://{w}</uri></include>\n")
     print(f"water models: {waters}")
+hero_rocks, hero_trees = [], []  # (x, y, z, scale) of grafted rocks/trees, for the hero cam
 if os.environ.get("FOREST") == "1" and os.path.exists("/workspace/worlds/forest_world.world"):
     incs = ET.parse("/workspace/worlds/forest_world.world").getroot().find("world").findall("include")
     n = 0
@@ -108,7 +109,17 @@ if os.environ.get("FOREST") == "1" and os.path.exists("/workspace/worlds/forest_
             continue  # we add terrain/water ourselves; avoid duplicate model names
         parts.append("    " + ET.tostring(inc, encoding="unicode").strip() + "\n")
         n += 1
-    print(f"grafted {n} forest includes")
+        p = inc.findtext("pose", "0 0 0 0 0 0").split()
+        try:
+            scl = float((inc.findtext("scale", "1 1 1").split() or ["1"])[0])
+            pose = (float(p[0]), float(p[1]), float(p[2]), scl)
+        except (ValueError, IndexError):
+            continue
+        if "model://rock" in uri:
+            hero_rocks.append(pose)
+        elif "model://tree" in uri:
+            hero_trees.append(pose)
+    print(f"grafted {n} forest includes ({len(hero_rocks)} rocks, {len(hero_trees)} trees)")
 
 
 def cam(name, x, y, z, pit, ya, fov=1.1, w=1100, h=750):
@@ -118,6 +129,45 @@ def cam(name, x, y, z, pit, ya, fov=1.1, w=1100, h=750):
             f"<camera><horizontal_fov>{fov}</horizontal_fov><image><width>{w}</width><height>{h}</height></image>"
             f"<clip><near>0.1</near><far>6000</far></clip></camera></sensor></link></model>\n")
 
+
+# Phase D (DEMO_REALISM_V2): re-pose cam_hero to a GROUND-LEVEL shot framing a landmark
+# boulder (foreground) with the populated scene receding behind it + slightly down --
+# echoing the originals' composition (big rock fills part of the frame, forest beyond).
+# Pick the boulder with the most nearby trees (and, tie-break, the biggest) so the shot
+# pairs a hero rock with real midground/background content (depth -> coverage, not a lens
+# jammed against one asset). Stand OUTWARD of it (away from the hilltop) looking INWARD so
+# the green slope -- not sky -- fills the background. HERO_EX (explicit override) keeps the
+# old fixed pose; if no rocks were placed, fall back to the elevated pose computed above.
+if hero_rocks and "HERO_EX" not in os.environ:
+    def _near(r, radius=55.0):
+        return [t for t in hero_trees if math.hypot(t[0] - r[0], t[1] - r[1]) < radius]
+    R = max(hero_rocks, key=lambda r: (len(_near(r)), r[3]))
+    rx, ry, rz, rs = R
+    local = _near(R) or hero_trees or [R]
+    tx = sum(t[0] for t in local) / len(local)
+    ty = sum(t[1] for t in local) / len(local)
+    onorm = math.hypot(rx, ry) or 1.0
+    ox, oy = rx / onorm, ry / onorm           # outward from the hill centre
+    perpx, perpy = -oy, ox                     # lateral offset (so cam isn't dead-on)
+    rad = 1.9 * rs * 0.6                        # rough boulder radius in metres
+    hcx = rx + ox * (6.0 + rad) + perpx * 2.0
+    hcy = ry + oy * (6.0 + rad) + perpy * 2.0
+    # HERO_DOWN raises the eye on FLAT scenes (savanna/coastal) so the shot tilts DOWN
+    # into the near field instead of staring level across the horizon -> cuts dead sky
+    # (the coverage drag on arid flats) and pushes the tiling-prone foreground sand below
+    # the frame centre. No-op on steep terrain (alpine), which is already clamped below.
+    hero_down = float(os.environ.get("HERO_DOWN", "0"))
+    hcz = max(_terrain_z(hcx, hcy), rz) + 1.6 + hero_down  # eye height above real ground
+    hax = rx - ox * 6.0 + (tx - rx) * 0.25     # aim just past the boulder toward the trees
+    hay = ry - oy * 6.0 + (ty - ry) * 0.25
+    # Never look UP into a slope: keep the aim at least 0.4 m below the eye so on steep
+    # (alpine) terrain the shot frames the scene + ground, not a point-blank rock wall.
+    # On gentle terrain the aim is already below the eye, so this is a no-op there.
+    haz = min(rz + 1.0, hcz - 0.4)
+    hx, hy, hz = hcx, hcy, hcz
+    hyaw = math.atan2(hay - hcy, hax - hcx)
+    hpitch = math.atan2(hz - haz, math.hypot(hax - hcx, hay - hcy))
+    print(f"PhaseD hero cam frames boulder scale={rs:.2f} ({len(_near(R))} trees within 55 m)")
 
 parts.append(cam("cam_oblique", cx, cy, cz, pitch, yaw))
 parts.append(cam("cam_top", 0.0, 0.0, tz, 1.5708, 0.0, fov=1.2, w=900, h=900))

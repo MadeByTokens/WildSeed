@@ -49,10 +49,16 @@ SCN = [
              "--detail", "0.12", "--smooth", "1.6"],
          density={"tree": 120, "rock": 45, "bush": 150, "grass": 300}, water=False,
          blurb="Rolling green hills, broadleaf forest + understory"),
+    # Phase D: savanna was the one weak frame (fast/MP ~2900, tilePk 0.37) -- two drags:
+    # ~40% dead sky and an empty, sand-ripple-tiling foreground. Coupled fix: HERO_DOWN
+    # raises the eye so the hero cam tilts DOWN (cuts sky, pushes the tiling sand low) AND
+    # near-field understory (grass/bush up hard) fills the reclaimed foreground with
+    # discrete scrub -> features + coverage + breaks the ripple's periodic dominance.
     dict(name="savanna_flats", biome="savanna", pixel=1.6,
          tg=["--preset", "hilly", "--seed", "3", "--amplitude", "12", "--feature", "140",
              "--detail", "0.10", "--smooth", "1.8"],
-         density={"tree": 30, "rock": 65, "bush": 95, "grass": 200}, water=False,
+         density={"tree": 60, "rock": 42, "bush": 200, "grass": 380}, water=False,
+         env={"HERO_DOWN": 3.0},
          blurb="Arid flats, quiver trees + scrub + dry bloom"),
     dict(name="lakeland_wetland", biome="wetland", pixel=1.6,
          tg=["--preset", "lakeland", "--seed", "7", "--feature", "130",
@@ -72,7 +78,7 @@ SCN = [
     dict(name="coastal_dune", biome="coastal", pixel=1.6,
          tg=["--preset", "hilly", "--seed", "11", "--amplitude", "7", "--feature", "150",
              "--detail", "0.10", "--smooth", "2.0"],
-         density={"tree": 35, "rock": 65, "bush": 120, "grass": 200}, water=False,
+         density={"tree": 45, "rock": 30, "bush": 130, "grass": 220}, water=False,
          blurb="Coastal dune, marram grass + dune shrubs + coast rocks"),
 ]
 
@@ -86,11 +92,16 @@ def run(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
 
-def render(cams, tag, water):
+def render(cams, tag, water, extra_env=None):
     env = dict(os.environ, FOREST="1")
     if water:
         env["WATER"] = "1"
-    run(["python3", f"{WS}/spike/terrain_scene.py"], env=env)
+    if extra_env:
+        env.update({k: str(v) for k, v in extra_env.items()})
+    ts = run(["python3", f"{WS}/spike/terrain_scene.py"], env=env)
+    for ln in ts.stdout.splitlines():
+        if "hero cam frames boulder" in ln or "extent" in ln:
+            print(f"  [{tag}] {ln}", flush=True)
     g = subprocess.Popen(["gz", "sim", "-s", "-r", "--headless-rendering",
                           f"{WS}/worlds/terrain_scene.world"],
                          stdout=open(f"{WS}/frames/gz_{tag}.log", "w"),
@@ -168,7 +179,7 @@ for s in SCN:
         run(CLI + ["ground", "--mode", "patchy", "--biome", ground, "--seed", "7", "--res", "4096"])
     constrain(pal)
     run(CLI + ["generate", "--density", json.dumps(s["density"]), "--seed", "7"])
-    render(["cam_hero", "cam_oblique", "cam_top"], name, s["water"])
+    render(["cam_hero", "cam_oblique", "cam_top"], name, s["water"], s.get("env"))
     print(f"  rendered {name}", flush=True)
 
 restore_all()
