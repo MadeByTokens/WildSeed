@@ -25,15 +25,15 @@ Branch: `feature/realism-convert-fork`. Everything below is committed.
 - `assets/manifest.yaml` — single source of truth: ~22 Poly Haven CC0 assets
   (id/category/res/lod/variant/scale/biomes) + per-biome species palettes.
   `assets/manifest.lock.yaml` — sha256 of each **source** download.
-- `spike/build_assets.py [ids...]` — idempotent fetch→normalize→convert → `models/<cat>/<id>/`.
-- `spike/fetch_polyhaven.py <id> <res> <dir> blend` — credential-free fetch.
-- `spike/normalize_blend.py` — open native .blend, pick LOD/variant, recenter/base-z0/scale,
+- `tools/build_assets.py [ids...]` — idempotent fetch→normalize→convert → `models/<cat>/<id>/`.
+- `tools/fetch_polyhaven.py <id> <res> <dir> blend` — credential-free fetch.
+- `tools/normalize_blend.py` — open native .blend, pick LOD/variant, recenter/base-z0/scale,
   rebuild foliage→Principled BSDF→MASK.
-- `spike/build_scenarios.py` — builds the 6 demos + renders galleries. `FOREST_SCN=name`
+- `tools/build_scenarios.py` — builds the 6 demos + renders galleries. `FOREST_SCN=name`
   filters to one scene. Reads biome palettes from the manifest; per-category stashing.
-- `spike/terrain_scene.py` — assembles the gz render world + cameras (`cam_hero`,
+- `tools/terrain_scene.py` — assembles the gz render world + cameras (`cam_hero`,
   `cam_oblique`, `cam_top`). Hero camera honours `HERO_EX/EY/AX/AY/EYE` env vars.
-- `spike/render_catalog.py` + `spike/compose_catalog.py` → `spike/asset_catalog.png`
+- `tools/render_catalog.py` + `tools/compose_catalog.py` → `tools/asset_catalog.png`
   (per-model thumbnails).
 - Core code: `src/forest3d/core/terraingen.py` (DEM synth), `core/ground.py` (ground
   texture compositor), `core/forest.py` (placement/density), `cli/generate.py`
@@ -100,7 +100,7 @@ landmarks. Realism and VIO/LIO align here.
 **Objective:** one command that quantifies the gap to the originals, so every later change
 is justified by a metric movement (not a "looks better").
 
-**Build `spike/compare.py`:**
+**Build `tools/compare.py`:**
 1. **Metricize the 3 originals.** Crop the Gazebo toolbar (top ~95 px) and playbar
    (bottom ~40 px) FIRST or you count GUI corners. Compute per image:
    - **ORB + FAST feature count** (`cv2.ORB_create`, `cv2.FastFeatureDetector_create`).
@@ -111,14 +111,14 @@ is justified by a metric movement (not a "looks better").
      = visible tiling. → these are the **target numbers**.
 2. **Render ours** from comparable ground-level poses (use `cam_hero` with `HERO_*` set
    near a hero asset) and compute the same metrics.
-3. Emit **`spike/compare.png`** (ours | original, per scene) + a printed/markdown **metric
+3. Emit **`tools/compare.png`** (ours | original, per scene) + a printed/markdown **metric
    table** + the gap.
 
 **Dependency:** add `opencv-python-headless` to `docker/constraints.txt` (pinned) and
 install in `docker/Dockerfile.egl`; rebuild `forest3d:egl`. (Headless variant — no GUI libs.)
 
 **Acceptance gate:** `compare.py` runs in the container, prints a table with all three
-metrics for the 3 originals and the 6 current scenes, writes `spike/compare.png`, and the
+metrics for the 3 originals and the 6 current scenes, writes `tools/compare.png`, and the
 **baseline gap is committed** (e.g. `docs/baseline_metrics.md`). Example expected baseline:
 ground tiling-peak high (~4 m), our feature count well below originals, coverage low.
 
@@ -128,7 +128,7 @@ ground tiling-peak high (~4 m), our feature count well below originals, coverage
 
 **Objective:** gently rolling terrain over tens of metres; no sub-2 m lumps.
 
-**Files:** `spike/build_scenarios.py` (the `tg=[...]` per scene), `src/forest3d/core/terraingen.py`
+**Files:** `tools/build_scenarios.py` (the `tg=[...]` per scene), `src/forest3d/core/terraingen.py`
 (presets/`detail`).
 
 **Steps:**
@@ -170,7 +170,7 @@ spatial coverage rises**. This is the gate that proves the VIO-killer is fixed.
 
 **Objective:** populated, varied scenes with distinguishable features + loop-closure anchors.
 
-**Files:** `assets/manifest.yaml` (palettes/scales), `spike/build_scenarios.py` (densities),
+**Files:** `assets/manifest.yaml` (palettes/scales), `tools/build_scenarios.py` (densities),
 `src/forest3d/core/forest.py` (placement: scale/rotation jitter, clustering, hero placement).
 
 **Steps:**
@@ -194,7 +194,7 @@ targets** for each demo; side-by-side shows comparable density/variety.
 
 **Objective:** the gallery shots match the originals' *framing intent*.
 
-**Files:** `spike/terrain_scene.py` (camera), `spike/build_scenarios.py` (gallery compose).
+**Files:** `tools/terrain_scene.py` (camera), `tools/build_scenarios.py` (gallery compose).
 
 **Steps:**
 - Add a **representative ground-level camera** per scene, placed near a hero asset (boulder +
@@ -202,12 +202,12 @@ targets** for each demo; side-by-side shows comparable density/variety.
   pixel-match; they're hand-posed GUI shots). The `HERO_*` env knobs + terrain-height
   sampling already exist; bake good per-scene values in.
 - Re-render the 6 galleries from these cameras.
-- Run `compare.py` → final `spike/compare.png` (ours | original) + metric table.
+- Run `compare.py` → final `tools/compare.png` (ours | original) + metric table.
 
 **Acceptance gate = Definition of Done:** for each demo, `compare.py` reports feature count
 + spatial coverage **within a stated % of the originals**, **tiling peak below threshold**,
 and a side-by-side that's visually comparable in **composition, density, variety**. Commit:
-updated `spike/scenarios_gallery.png`, `spike/compare.png`, the metric table
+updated `tools/scenarios_gallery.png`, `tools/compare.png`, the metric table
 (`docs/baseline_metrics.md` updated to before/after), and a short honest report including the
 **CC0 ceiling caveat**.
 

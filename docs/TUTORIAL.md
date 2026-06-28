@@ -49,9 +49,9 @@ docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
   -e PYTHONPATH=/workspace/src -e GZ_SIM_RESOURCE_PATH=/workspace/models \
   -v "$PWD:/workspace" --entrypoint bash forest3d:egl -c '
   cd /workspace
-  FOREST=1 python3 spike/terrain_scene.py            # build a world w/ oblique + top-down cameras
+  FOREST=1 python3 tools/terrain_scene.py            # build a world w/ oblique + top-down cameras
   gz sim -s -r --headless-rendering worlds/terrain_scene.world > frames/gz.log 2>&1 &
-  GZ=$!; python3 spike/capture_cams.py cam_oblique,cam_top; kill $GZ
+  GZ=$!; python3 tools/capture_cams.py cam_oblique,cam_top; kill $GZ
 '
 # convert the captured frames to PNG (host, with Pillow):
 python3 -c "from PIL import Image;import numpy as np;Image.fromarray(np.load('frames/cam_oblique.npy')).save('view.png')"
@@ -110,10 +110,10 @@ automatically.
 Trees/rocks under `models/<category>/` are placed at random by `generate` (one
 random variant per slot). To control *which* species appear, keep only the variants
 you want in `models/<category>/` (move the rest aside). The CC0 assets shipped here
-and how to (re)fetch them are documented in `spike/ASSET_REGISTRY.md`; the fetch +
-normalize scripts are `spike/fetch_polyhaven.py` and `spike/import_gltf.py`.
+and how to (re)fetch them are documented in `tools/ASSET_REGISTRY.md`; the fetch +
+normalize scripts are `tools/fetch_polyhaven.py` and `tools/import_gltf.py`.
 
 ## 6. Ready-made scenarios
 
 Five complete demo scenarios (incl. two snow) with exact commands and images:
-**`docs/SCENARIOS.md`**. Rebuild them all with `spike/build_scenarios.py`.
+**`docs/SCENARIOS.md`**. Rebuild them all with `tools/build_scenarios.py`.

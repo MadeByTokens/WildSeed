@@ -1,6 +1,6 @@
 # Baseline feature metrics — DEMO_REALISM_V2 Phase 0
 
-Produced by `spike/compare.py` (run in `forest3d:egl`). This is the **before** snapshot
+Produced by `tools/compare.py` (run in `forest3d:egl`). This is the **before** snapshot
 the later phases (A→D) must move. Every metric is image-level (ORB/FAST features, spatial
 coverage, tiling autocorrelation) — deliberately NOT a VIO/LIO odometry rig (scope decision
 in `DEMO_REALISM_V2.md` §0). Re-run after each phase and append a **after** block.
@@ -9,10 +9,10 @@ How to reproduce (identical numbers on host or in-container):
 
 ```bash
 docker run --rm -v "$PWD:/workspace" --entrypoint bash forest3d:egl \
-  -c 'cd /workspace && python3 spike/compare.py'
+  -c 'cd /workspace && python3 tools/compare.py'
 ```
 
-Outputs `spike/compare.png` (our hero | reference original, per scene, with metrics).
+Outputs `tools/compare.png` (our hero | reference original, per scene, with metrics).
 
 ## Metric definitions (and why they are trustworthy)
 
@@ -111,7 +111,7 @@ the green-scene **hero tilePk rose** (lakeland 0.18→0.37, temperate 0.30→0.3
 the terrain *exposed* the tiled ground texture that the surface noise was masking. This
 confirms hero tilePk was never purely "tiled base ground" — and it sets up a clean,
 attributable Phase B fix (break the ground tiling and this drops). Terrain reads smooth in
-`spike/scenarios_overview.png`; alpine retains rugged relief. Gate met: smooth + no
+`tools/scenarios_overview.png`; alpine retains rugged relief. Gate met: smooth + no
 *unexplained* feature regression.
 
 > Note: per the framing caveat, the Phase B gate is judged on **top.tilePk** (ground always
@@ -140,7 +140,7 @@ Three changes, bundled (each isolated below so credit is honest):
 | winter_forest          |   4868 |   11520 | 0.94 | 0.00 | 0.091 |   353 | 0.216      |
 | coastal_dune           |   4785 |   14374 | 0.59 | 0.00 | 0.328 |   240 | 0.159      |
 
-**De-tiling proof — read the autocorr MAP, not the scalar** (`spike/phaseB_detiling_autocorr.png`):
+**De-tiling proof — read the autocorr MAP, not the scalar** (`tools/phaseB_detiling_autocorr.png`):
 - The hero tilePk scalar is too **framing-noisy** to gate on (temperate 0.051 vs lakeland
   0.391 under the *same* warp — it swings with whatever fills the sparse hero frame). And
   `top.tilePk` has **no original baseline** (all 3 originals are ground-level, never top-down),
@@ -185,12 +185,12 @@ the hero would misread it as failing):
 | winter_forest     | 0.72        | 5022            | 0.97     | 12556        |
 | coastal_dune      | 0.72        | 5100            | 0.59     | 14374        |
 
-The fields are visibly populated (`spike/scenarios_overview.png`): trees scattered across
+The fields are visibly populated (`tools/scenarios_overview.png`): trees scattered across
 every scene, conifers dotting the alpine/winter slopes, rich non-repeating ground, no
 trails, no black blobs. hero FAST/MP rose (e.g. temperate 11.9k → 13.7k) but hero coverage
 is still framing-capped — **that gap is closed in Phase D**, not by more density here.
 The island broadleaf trees carry a real (if olive/sparse-at-distance) canopy — verified
-leafy in `spike/asset_catalog.png` — so this is distance/LOD thinning, not the dead/winter
+leafy in `tools/asset_catalog.png` — so this is distance/LOD thinning, not the dead/winter
 look; acceptable within the CC0 ceiling.
 
 ## AFTER PHASE D — ground-level hero cameras + savanna near-field fix

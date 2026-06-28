@@ -1,6 +1,6 @@
 """Compose frames/catalog/*.png into a labeled grid grouped by category.
 
-  python3 spike/compose_catalog.py   ->  spike/asset_catalog.png
+  python3 tools/compose_catalog.py   ->  tools/asset_catalog.png
 """
 import glob
 import os
@@ -9,7 +9,7 @@ from collections import defaultdict
 from PIL import Image, ImageDraw, ImageFont
 
 SRC = "/workspace/frames/catalog"
-OUT = "/workspace/spike/asset_catalog.png"
+OUT = "/workspace/tools/asset_catalog.png"
 TW, TH = 360, 440
 COLS = 5
 PAD = 6

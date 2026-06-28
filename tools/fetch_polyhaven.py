@@ -1,9 +1,9 @@
 """Download a Poly Haven model bundle (gltf or native blend + textures) into a dir.
 
 All Poly Haven assets are CC0 (credential-free public API -> reproducible). Usage:
-    python3 spike/fetch_polyhaven.py <asset_id> <res> <out_dir> [fmt=gltf|blend]
-e.g. python3 spike/fetch_polyhaven.py fir_sapling 1k Blender-Assets/tree/_raw_fir_sapling
-     python3 spike/fetch_polyhaven.py shrub_01 2k Blender-Assets/bush/_raw_shrub_01 blend
+    python3 tools/fetch_polyhaven.py <asset_id> <res> <out_dir> [fmt=gltf|blend]
+e.g. python3 tools/fetch_polyhaven.py fir_sapling 1k Blender-Assets/tree/_raw_fir_sapling
+     python3 tools/fetch_polyhaven.py shrub_01 2k Blender-Assets/bush/_raw_shrub_01 blend
 
 Prefer `blend` for foliage: Poly Haven's glTF omits the foliage alpha map (leaves
 re-export OPAQUE), but the native .blend wires opacity in the material, so the

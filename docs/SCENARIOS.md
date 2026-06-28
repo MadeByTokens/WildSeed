@@ -10,15 +10,15 @@ from `docs/TUTORIAL.md`).
 
 ```bash
 # 1. Build the CC0 asset set (fetch -> normalize -> convert; idempotent, ~20 assets)
-python3 spike/build_assets.py
+python3 tools/build_assets.py
 
 # 2. Build all six scenarios + render the galleries
-python3 spike/build_scenarios.py    # writes spike/scenarios_gallery.png + _overview.png
+python3 tools/build_scenarios.py    # writes tools/scenarios_gallery.png + _overview.png
 ```
 
 `build_assets.py` reads `assets/manifest.yaml` (the asset list + per-biome palettes)
 and writes `assets/manifest.lock.yaml` with each source's sha256. All assets are CC0
-(Poly Haven, https://polyhaven.com) — see `spike/ASSET_REGISTRY.md` for full credits.
+(Poly Haven, https://polyhaven.com) — see `tools/ASSET_REGISTRY.md` for full credits.
 
 ## Adjusting density (trees, rocks, bushes, grass)
 
@@ -106,7 +106,7 @@ forest3d generate   --density '{"tree":8,"rock":14,"bush":20,"grass":45}' --seed
 
 ### Notes
 - Render any scenario with the harness in `docs/TUTORIAL.md` §2 (`FOREST=1
-  python3 spike/terrain_scene.py` then `gz sim ...`). Add `WATER=1` for lakeland.
+  python3 tools/terrain_scene.py` then `gz sim ...`). Add `WATER=1` for lakeland.
 - Species per scenario come from `assets/manifest.yaml` → `biomes.<name>`. Add a
   Poly Haven id to the `assets` list + a biome palette, run `build_assets.py`, and it
   joins the scatter.

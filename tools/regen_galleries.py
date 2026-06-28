@@ -48,5 +48,5 @@ def make_gallery(cam, outfile, PW=720, PH=420):
     print("wrote", outfile)
 
 
-make_gallery("cam_hero", f"{WS}/spike/scenarios_gallery.png")
-make_gallery("cam_oblique", f"{WS}/spike/scenarios_overview.png")
+make_gallery("cam_hero", f"{WS}/tools/scenarios_gallery.png")
+make_gallery("cam_oblique", f"{WS}/tools/scenarios_overview.png")

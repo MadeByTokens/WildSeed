@@ -9,7 +9,7 @@ wire foliage through a custom node GROUP the glTF exporter can't read. This scri
   4. downscales normal/rough maps to 1K (plan budget), packs textures,
   5. saves a self-contained Blender-Assets/tree/island_tree_01.blend.
 
-Run: blender -b --python spike/normalize_island_tree.py
+Run: blender -b --python tools/normalize_island_tree.py
 """
 import bpy
 

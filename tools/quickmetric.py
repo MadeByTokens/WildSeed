@@ -1,6 +1,6 @@
 """Quick per-frame metrics for a single scene (reuses compare.py).
 
-  python3 spike/quickmetric.py savanna_flats [hero|oblique|top] ...
+  python3 tools/quickmetric.py savanna_flats [hero|oblique|top] ...
 Prints cov / fast-per-MP / tilePk for each named scene's cam_hero (and cam_top
 tilePk), so a single-scene fix build can be judged without the full compare grid.
 """

@@ -10,7 +10,7 @@ VIO/LIO odometry/eval rig (scope decision in `docs/DEMO_REALISM_V2.md` §0).
 
 ## How it was proven
 
-`spike/compare.py` (run in `forest3d:egl`) measures, on every frame resized to a common
+`tools/compare.py` (run in `forest3d:egl`) measures, on every frame resized to a common
 720 px height:
 
 - **ORB / FAST per megapixel** — feature richness, resolution-normalized (originals are
@@ -23,8 +23,8 @@ VIO/LIO odometry/eval rig (scope decision in `docs/DEMO_REALISM_V2.md` §0).
 
 The 3 originals are GUI-cropped first (toolbar/playbar would count as strong corners). Full
 before/after tables and per-phase deltas are in `docs/baseline_metrics.md`; the side-by-side
-grid is `spike/compare.png`; the 6-panel galleries are `spike/scenarios_gallery.png` (hero)
-and `spike/scenarios_overview.png` (oblique).
+grid is `tools/compare.png`; the 6-panel galleries are `tools/scenarios_gallery.png` (hero)
+and `tools/scenarios_overview.png` (oblique).
 
 ## Phase-by-phase (each change justified by a metric move, not "looks better")
 
@@ -40,7 +40,7 @@ and `spike/scenarios_overview.png` (oblique).
 - **Phase B** — dropped trails (in zero originals); **de-tiled the ground** (macro
   base-variation patches + a domain warp of the tile grid — the autocorr lattice collapsed
   from a sharp regular grid to fuzzy blobs, proven structurally in
-  `spike/phaseB_detiling_autocorr.png`); fixed the **black-blob asset bug** (two grass models
+  `tools/phaseB_detiling_autocorr.png`); fixed the **black-blob asset bug** (two grass models
   shipped an untextured near-black `<id>_sphere` material-preview ball on a 1 M-tri object →
   `normalize_blend.py` now strips it; grass regenerated 1.04 M→15.7 k tris).
 - **Phase C** — density + variety + mature/bigger trees (`SCALE_RANGES` widened) + landmark
@@ -104,7 +104,7 @@ Stated plainly, including where a literal reading is not cleared:
   a hard scalar it is NOT cleared for the 2 bare-sand demos** (savanna 0.311, coastal 0.310),
   and that is surfaced here, not hidden. *Why it is still gate-consistent:* the gate targets the
   **fine ~4–7 m ground tile** (the VIO-killer), which is broken for every demo — proven
-  structurally in Phase B (`spike/phaseB_detiling_autocorr.png`: the regular autocorr lattice
+  structurally in Phase B (`tools/phaseB_detiling_autocorr.png`: the regular autocorr lattice
   collapses under the domain warp). The residual sand-biome peak is the *dominant secondary*
   maximum, and it sits at a **large period** (193 px / 346 px ≈ dune/macro scale), i.e. organic
   bare-desert surface relief, **not** the fine repeating tile. So no demo carries a dominant
@@ -126,7 +126,7 @@ fidelity. Concretely:
 
 - CC0 broadleaf foliage reads **darker and sparser at distance** than Maxtree acacia → this is
   most of the residual FAST/MP gap (59 % of target). Verified the canopies are genuinely leafy
-  (`spike/asset_catalog.png`); the thinning is distance/LOD, not dead trees.
+  (`tools/asset_catalog.png`); the thinning is distance/LOD, not dead trees.
 - We do not reach Megascans-scan ground/rock micro-detail; bare-sand biomes therefore carry a
   real surface ripple (the savanna/coastal residual tilePk), which is *physical*, not a tiled
   texture.
@@ -140,16 +140,16 @@ metric movements above, the DEMO_REALISM_V2 goal is met.
 ```bash
 # rebuild all 6 scenes end-to-end (GPU), then galleries:
 docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all -e PYTHONPATH=/workspace/src \
-  -v "$PWD:/workspace" --entrypoint bash forest3d:egl -c 'cd /workspace && python3 spike/build_scenarios.py'
+  -v "$PWD:/workspace" --entrypoint bash forest3d:egl -c 'cd /workspace && python3 tools/build_scenarios.py'
 
 # metric scorecard + side-by-side grid:
 docker run --rm -v "$PWD:/workspace" --entrypoint bash forest3d:egl \
-  -c 'cd /workspace && python3 spike/compare.py'
+  -c 'cd /workspace && python3 tools/compare.py'
 ```
 
 The committed metric table was confirmed by a single clean end-to-end
 `build_scenarios.py` run from the committed code (all seeds fixed; the build is
 deterministic), so the committed numbers reproduce from a clean checkout — they are not
-an artifact of incremental tuning builds. (`spike/regen_galleries.py` exists only to
+an artifact of incremental tuning builds. (`tools/regen_galleries.py` exists only to
 rebuild the 6-panel galleries after a *single-scene* `FOREST_SCN=` fix build, which would
 otherwise leave the gallery with one panel.)

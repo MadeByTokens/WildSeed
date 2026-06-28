@@ -1,7 +1,7 @@
 """Build a tiny world with ONE model + a flat ground + a 3/4 camera, to eyeball a
 freshly converted asset (esp. foliage alpha).
 
-  MODEL=tree/fir_sapling python3 spike/model_probe.py   # writes worlds/probe.world
+  MODEL=tree/fir_sapling python3 tools/model_probe.py   # writes worlds/probe.world
 The MODEL value is model://<name>; we look up its size from the glb's dir name.
 """
 import os

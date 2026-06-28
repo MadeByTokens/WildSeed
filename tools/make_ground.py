@@ -260,7 +260,7 @@ def main():
     write_sdf()
     # also dump a small preview of the albedo for offline verification
     from PIL import Image
-    Image.fromarray(alb).resize((512, 512)).save(os.path.join(ROOT, "spike", f"ground_{args.mode}_preview.png"))
+    Image.fromarray(alb).resize((512, 512)).save(os.path.join(ROOT, "tools", f"ground_{args.mode}_preview.png"))
     print(f"{args.mode.upper()} res={res} seed={args.seed} -> ground_Color/NormalGL/Roughness.png + 0..1 UV")
 
 

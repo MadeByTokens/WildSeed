@@ -3,7 +3,7 @@ compose one PNG. Runs inside forest3d:egl with --gpus all.
 
 For each preset: terraingen -> terrain (mesh) -> ground (uniform) ->
 [water plane for lakeland, at the sidecar's suggested level] -> render oblique
-(+ top-down for lakeland) -> save frames. Then tile into spike/terrain_gallery.png.
+(+ top-down for lakeland) -> save frames. Then tile into tools/terrain_gallery.png.
 """
 import json
 import os
@@ -28,7 +28,7 @@ def render(world, cams):
     g = subprocess.Popen(["gz", "sim", "-s", "-r", "--headless-rendering", world],
                          stdout=open("/workspace/frames/gz.log", "w"), stderr=subprocess.STDOUT)
     try:
-        subprocess.run(["python3", "/workspace/spike/capture_cams.py", ",".join(cams)],
+        subprocess.run(["python3", "/workspace/tools/capture_cams.py", ",".join(cams)],
                        timeout=70)
     finally:
         g.terminate()
@@ -61,7 +61,7 @@ for p in PRESETS:
             print(f"  water plane @ {level}", flush=True)
 
     cams = ["cam_oblique", "cam_top"] if p == "lakeland" else ["cam_oblique"]
-    run(["python3", "/workspace/spike/terrain_scene.py"], WATER=water)
+    run(["python3", "/workspace/tools/terrain_scene.py"], WATER=water)
     render("/workspace/worlds/terrain_scene.world", cams)
     time.sleep(0.5)
     for c in cams:
@@ -96,6 +96,6 @@ for i, (label, a) in enumerate(panels):
     draw.rectangle([x + 8, y + 8, x + 18 + draw.textlength(label, font=font), y + 40], fill=(0, 0, 0))
     draw.text((x + 13, y + 10), label, fill=(255, 255, 255), font=font)
 
-out = "/workspace/spike/terrain_gallery.png"
+out = "/workspace/tools/terrain_gallery.png"
 gallery.save(out)
 print(f"wrote {out}  ({len(panels)} panels)", flush=True)

@@ -25,7 +25,7 @@ forest3d ground --mode patchy --biome grassland --seed 7
 forest3d generate --density '{"tree":40,"rock":12,"bush":20}' --seed 7
 ```
 
-The render harness used in this repo is `spike/terrain_scene.py` (+ `capture_cams.py`);
+The render harness used in this repo is `tools/terrain_scene.py` (+ `capture_cams.py`);
 see `docs/TUTORIAL.md` for the full Docker render recipe.
 
 ## Presets
@@ -128,6 +128,6 @@ creek visibility, the `--detail` decoupling, and the GeoTIFF round-trip.
 
 ## Gallery
 
-`spike/terrain_gallery.png` (5 presets), `spike/terrain_seeds.png` (seed variation),
-`spike/diag_detail.png` (surface-smoothness control). Demo scenarios built on top of
+`tools/terrain_gallery.png` (5 presets), `tools/terrain_seeds.png` (seed variation),
+`tools/diag_detail.png` (surface-smoothness control). Demo scenarios built on top of
 this: see `docs/SCENARIOS.md`.

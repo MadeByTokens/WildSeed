@@ -1,14 +1,14 @@
 """Blender: open a Poly Haven native .blend, normalize, save a self-contained
 .blend ready for `forest3d convert`.
 
-  blender -b <in.blend> --python spike/normalize_blend.py -- <out_blend> [scale] [variant]
+  blender -b <in.blend> --python tools/normalize_blend.py -- <out_blend> [scale] [variant]
 
 Poly Haven kit .blends ship many variants (a,b,c,...) x several LODs; only the LOD0
 objects are linked to the view layer. We keep a single LOD (the lowest-numbered LOD
 present in the view layer) and a single variant (default the first; pass `variant` to
 pick another, e.g. 'c') so each download yields one clean, scatter-ready model.
 
-Same normalization as spike/import_gltf.py (recenter footprint to XY origin, base to
+Same normalization as tools/import_gltf.py (recenter footprint to XY origin, base to
 z=0, optional uniform scale, pack textures, alpha->MASK node wiring for the glTF
 exporter) but the source is a native .blend whose foliage materials already wire
 their opacity map -- so the alpha->MASK pattern triggers automatically and leaves
@@ -149,7 +149,7 @@ print(f"NORMALIZED size x={mx[0]-mn[0]:.2f} y={mx[1]-mn[1]:.2f} z={(mx[2]-zmin):
 # Foliage -> alphaMode=MASK. Poly Haven foliage materials wire transparency through a
 # custom node GROUP the glTF exporter can't read, so it defaults to alphaMode=BLEND ->
 # dense double-sided leaves form a dark depth-sort blob. Fix (generalises the proven
-# spike/normalize_island_tree.py): for foliage materials, REBUILD as a plain Principled
+# tools/normalize_island_tree.py): for foliage materials, REBUILD as a plain Principled
 # BSDF and splice the leaf alpha image through Math:Greater-Than(0.5) into Alpha. That
 # node pattern is what Blender 4.2's exporter reads as MASK. Solid materials (trunk/
 # branch/rock) keep their nodes and are just forced OPAQUE. See [[blender42-gltf-mask-foliage]].

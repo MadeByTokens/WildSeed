@@ -3,7 +3,7 @@
 Goal: bring the shipped demo scenarios up to the realism/variety of the upstream
 screenshots (`Screenshot from 2026-01-*.png`), which were rendered from **commercial**
 assets we cannot ship (Maxtree Plant Models Vol. 60 + Quixel Megascans — see
-`spike/ASSET_REGISTRY.md`). We match the *look* with assets that are reproducible for
+`tools/ASSET_REGISTRY.md`). We match the *look* with assets that are reproducible for
 every user, and keep nicer non-redistributable assets for local-only hero renders.
 
 The realism gap is **variety**, not the pipeline. Today every scenario uses only
@@ -52,24 +52,24 @@ The fetcher, the normalizer, and the repro test all read this. Checksums make "f
 real — a changed upstream asset fails the hash, not silently drifts.
 
 ### 2.2 Fetch tooling (extend what exists)
-- `spike/fetch_polyhaven.py` — already credential-free CC0 fetch-by-ID. Keep; drive from manifest.
-- `spike/fetch_ambientcg.py` — analogous, for ground PBR packs (already used ad hoc; formalize).
-- `spike/fetch_release.py` — **new**: pull our pinned `forest3d-assets-vN` tarball
+- `tools/fetch_polyhaven.py` — already credential-free CC0 fetch-by-ID. Keep; drive from manifest.
+- `tools/fetch_ambientcg.py` — analogous, for ground PBR packs (already used ad hoc; formalize).
+- `tools/fetch_release.py` — **new**: pull our pinned `forest3d-assets-vN` tarball
   (the ffish.asia CC0 picks) from the GitHub Release, verify sha256, unpack to `Blender-Assets/`.
-- `spike/harvest_sketchfab.py` — **new, LOCAL/maintainer-only**: download a curated
+- `tools/harvest_sketchfab.py` — **new, LOCAL/maintainer-only**: download a curated
   ffish.asia model list via the user's Sketchfab token. Used **once** by us to build the
   Release tarball; never run by end users. Output then uploaded as `forest3d-assets-vN`.
 
 ### 2.3 Procedural generators (in-container, zero download)
-- `spike/gen_grass.py` — Blender geometry-nodes grass/sedge clumps → glb. Several
+- `tools/gen_grass.py` — Blender geometry-nodes grass/sedge clumps → glb. Several
   silhouettes (fine turf, tall tussock, marram-style blades). Output CC0.
-- `spike/gen_tree_sapling.py` — Sapling Tree Gen presets for windswept/coastal +
+- `tools/gen_tree_sapling.py` — Sapling Tree Gen presets for windswept/coastal +
   generic broadleaf/conifer fillers → glb. Output CC0.
   > Procedural carries zero licensing/repro risk and is the most reliable ground-cover
   > mass. Prefer it for dense filler; reserve photoscanned picks for hero specimens.
 
 ### 2.4 Normalization (reuse)
-All assets (fetched or generated) go through `spike/import_gltf.py`:
+All assets (fetched or generated) go through `tools/import_gltf.py`:
 recenter, base→z0, foliage alpha→`Math:GreaterThan(0.5)`→MASK (Blender-4.2 EEVEE-Next
 gotcha — see memory `blender42-gltf-mask-foliage`), nor/rough downscale. Then
 `forest3d convert -c configs/realism.yaml`.
@@ -125,7 +125,7 @@ add the Coastal dune scenario, tune densities. Update `docs/SCENARIOS.md` recipe
 
 **Phase 3 — Render + gallery.**
 Multi-cam per demo (oblique + top + one ground-level hero), reproducible tier only.
-Regenerate `spike/scenarios_gallery.png` + README section. Optionally one local-only
+Regenerate `tools/scenarios_gallery.png` + README section. Optionally one local-only
 hero render, clearly labelled illustrative.
 
 **Phase 4 — Placement realism (deferred; bigger lift, must not gate Phase 1).**

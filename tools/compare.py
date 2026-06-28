@@ -1,4 +1,4 @@
-"""spike/compare.py — Phase 0 metric harness for DEMO_REALISM_V2.
+"""tools/compare.py — Phase 0 metric harness for DEMO_REALISM_V2.
 
 Quantifies the gap between our 6 demo hero renders and the 3 original Gazebo
 screenshots using IMAGE-LEVEL feature metrics (this is deliberately NOT a VIO/LIO
@@ -31,10 +31,10 @@ GUI corners count as strong features.
 
 Run (in the container, where the metrics gate lives):
   docker run --rm -v "$PWD:/workspace" --entrypoint bash forest3d:egl \\
-    -c 'cd /workspace && python3 spike/compare.py'
+    -c 'cd /workspace && python3 tools/compare.py'
 
 Outputs:
-  spike/compare.png        our hero | reference original, per scene, with metrics
+  tools/compare.png        our hero | reference original, per scene, with metrics
   stdout                   a markdown metric table (originals + 6 scenes + gap)
   --md PATH                also write the table to PATH (e.g. docs/baseline_metrics.md)
 """
@@ -310,7 +310,7 @@ def main():
     table = "\n".join(lines)
     print(table)
 
-    out_png = os.path.join(WS, "spike", "compare.png")
+    out_png = os.path.join(WS, "tools", "compare.png")
     build_compare_png(scene_imgs, scene_metrics, orig_imgs, orig_metrics, out_png)
     print(f"\nwrote {out_png}")
 

@@ -10,7 +10,7 @@ embeds timestamps/pointers, but they are deterministic in content.
 
 Run INSIDE forest3d:egl (has Blender + forest3d + network):
   docker run --rm -v "$PWD:/workspace" --entrypoint bash forest3d:egl-v1 -c \
-    'cd /workspace && python3 spike/build_assets.py'
+    'cd /workspace && python3 tools/build_assets.py'
 
 Optional args: a space-separated list of asset ids to (re)build only those.
 """
@@ -94,7 +94,7 @@ def main():
 
         # 1. fetch native .blend (idempotent inside fetch script)
         if not os.path.exists(norm):
-            r = run(["python3", "spike/fetch_polyhaven.py", aid, res, raw_dir, "blend"])
+            r = run(["python3", "tools/fetch_polyhaven.py", aid, res, raw_dir, "blend"])
             if r.returncode != 0:
                 print("  FETCH FAILED", flush=True); fail.append(aid); continue
             raws = [f for f in os.listdir(raw_dir) if f.endswith(".blend")]
@@ -102,7 +102,7 @@ def main():
                 print("  no .blend fetched", flush=True); fail.append(aid); continue
             src = os.path.join(raw_dir, raws[0])
             # 2. normalize
-            r = run(["blender", "-b", src, "--python", "spike/normalize_blend.py",
+            r = run(["blender", "-b", src, "--python", "tools/normalize_blend.py",
                      "--", norm, scale, variant, lod])
             if r.returncode != 0 or not os.path.exists(norm):
                 print("  NORMALIZE FAILED", flush=True); fail.append(aid); continue

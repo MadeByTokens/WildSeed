@@ -1,7 +1,7 @@
 """Blender: import a Poly Haven glTF, normalize, save a self-contained .blend
 ready for `forest3d convert`.
 
-  blender -b --python spike/import_gltf.py -- <gltf_path> <out_blend> [scale]
+  blender -b --python tools/import_gltf.py -- <gltf_path> <out_blend> [scale]
 
 Normalize = join nothing (keep materials), apply transforms, recenter so the
 model's footprint is at XY origin and its base sits at z=0 (so terrain placement
@@ -66,7 +66,7 @@ print(f"NORMALIZED size x={mx[0]-mn[0]:.2f} y={mx[1]-mn[1]:.2f} z={(mx[2]-zmin):
 # straight to BSDF.Alpha, so on re-export foliage comes out OPAQUE (solid white
 # cards). For any material whose Alpha is driven, splice a Math:Greater-Than(0.5)
 # node before BSDF.Alpha -> exporter detects alphaMode=MASK. Solid materials are
-# left OPAQUE. (Same trick as spike/normalize_island_tree.py, generalized.)
+# left OPAQUE. (Same trick as tools/normalize_island_tree.py, generalized.)
 for m in bpy.data.materials:
     if not m.use_nodes or not m.node_tree:
         continue

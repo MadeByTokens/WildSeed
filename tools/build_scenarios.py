@@ -12,8 +12,8 @@ grass counts) is the user-tunable knob: edit it here, or override per run with
 `forest3d generate --density '{"tree":80,...}'`.
 
 Output: frames/scn_<name>_{hero,oblique,top}.npy and:
-  spike/scenarios_gallery.png   (hero, human-scale)
-  spike/scenarios_overview.png  (oblique, aerial)
+  tools/scenarios_gallery.png   (hero, human-scale)
+  tools/scenarios_overview.png  (oblique, aerial)
 """
 import json
 import os
@@ -98,7 +98,7 @@ def render(cams, tag, water, extra_env=None):
         env["WATER"] = "1"
     if extra_env:
         env.update({k: str(v) for k, v in extra_env.items()})
-    ts = run(["python3", f"{WS}/spike/terrain_scene.py"], env=env)
+    ts = run(["python3", f"{WS}/tools/terrain_scene.py"], env=env)
     for ln in ts.stdout.splitlines():
         if "hero cam frames boulder" in ln or "extent" in ln:
             print(f"  [{tag}] {ln}", flush=True)
@@ -107,7 +107,7 @@ def render(cams, tag, water, extra_env=None):
                          stdout=open(f"{WS}/frames/gz_{tag}.log", "w"),
                          stderr=subprocess.STDOUT)
     try:
-        run(["python3", f"{WS}/spike/capture_cams.py", ",".join(cams)], timeout=120)
+        run(["python3", f"{WS}/tools/capture_cams.py", ",".join(cams)], timeout=120)
     finally:
         g.terminate()
         try:
@@ -218,5 +218,5 @@ def make_gallery(cam, outfile, PW=720, PH=420):
     print("wrote", outfile, flush=True)
 
 
-make_gallery("cam_hero", f"{WS}/spike/scenarios_gallery.png")
-make_gallery("cam_oblique", f"{WS}/spike/scenarios_overview.png")
+make_gallery("cam_hero", f"{WS}/tools/scenarios_gallery.png")
+make_gallery("cam_oblique", f"{WS}/tools/scenarios_overview.png")

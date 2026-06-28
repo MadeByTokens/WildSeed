@@ -75,7 +75,7 @@ forest3d ground     --mode patchy --biome grassland --auto-water --dem dem/synth
 forest3d generate   --density '{"tree":35,"rock":12}' --seed 7    # populate
 ```
 
-![demo scenarios](spike/scenarios_gallery.png)
+![demo scenarios](tools/scenarios_gallery.png)
 
 Six ready-made demo scenarios (two snow) — **temperate hills, savanna flats,
 lakeland wetland, alpine snow, winter forest, coastal dune** — each with a 3-layer
@@ -83,8 +83,8 @@ structure (canopy trees / understory shrubs / grass + flowers) built from **CC0
 Poly Haven assets** and reproduced with **no account or login**:
 
 ```bash
-python3 spike/build_assets.py       # fetch+convert the CC0 asset set (idempotent)
-python3 spike/build_scenarios.py    # build all 6 + render spike/scenarios_gallery.png
+python3 tools/build_assets.py       # fetch+convert the CC0 asset set (idempotent)
+python3 tools/build_scenarios.py    # build all 6 + render tools/scenarios_gallery.png
 ```
 
 Density is fully tunable per category — `forest3d generate --density
@@ -104,7 +104,7 @@ library changes: base image by digest, `gz-harmonic`=1.0.0-1~jammy + Blender 4.2
 are durable). The demo asset set is pinned in
 [`assets/manifest.yaml`](assets/manifest.yaml) with source sha256s in
 `assets/manifest.lock.yaml`, fetched **credential-free** from Poly Haven (all CC0;
-credits in [spike/ASSET_REGISTRY.md](spike/ASSET_REGISTRY.md)).
+credits in [tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md)).
 
 > **Residual apt risk — archive the image for a true freeze.** The OSRF (`gz-harmonic`)
 > and Ubuntu (`gdal-bin`, etc.) apt repos serve only the *current* version, so a far-future

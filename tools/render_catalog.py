@@ -1,10 +1,10 @@
 """Blender: render a framed thumbnail of every converted model in models/<cat>/.
 
-  blender -b --python spike/render_catalog.py
+  blender -b --python tools/render_catalog.py
 
 Imports each models/<cat>/<id>/mesh/<id>.glb fresh, frames it 3/4, lights it, and
 renders frames/catalog/<cat>__<id>.png (EEVEE-Next, GPU). Compose with
-spike/compose_catalog.py. Shows asset shape + texture + MASK foliage so quality and
+tools/compose_catalog.py. Shows asset shape + texture + MASK foliage so quality and
 count are visible at a glance.
 """
 import glob
