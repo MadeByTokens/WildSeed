@@ -135,11 +135,17 @@ class TerrainSynthesizer:
         work = int(min(res, 256))
         # feature size of the coarsest octave, in working-grid pixels
         sigma = max(feature_m / pixel_m * work / res, 1.0)
+        # Generate each octave on a grid padded by ~3*sigma and crop the centre.
+        # gaussian_filter's boundary handling (reflect/etc.) makes a large-sigma
+        # blur converge symmetrically toward the grid centre -> a faint radial
+        # "star" in shaded renders (busy presets like mountainous). Padding pushes
+        # all boundary effects outside the kept region, independent of mode.
+        pad = int(min(work, np.ceil(3.0 * sigma)))
         out = np.zeros((work, work), np.float32)
         amp, total = 1.0, 0.0
         for i in range(octaves):
-            n = gaussian_filter(rng.standard_normal((work, work)).astype(np.float32),
-                                sigma=max(sigma, 0.8))
+            base = rng.standard_normal((work + 2 * pad, work + 2 * pad)).astype(np.float32)
+            n = gaussian_filter(base, sigma=max(sigma, 0.8))[pad:pad + work, pad:pad + work]
             w = amp if i < macro else amp * detail  # attenuate fine octaves only
             out += w * n
             total += w
@@ -151,7 +157,12 @@ class TerrainSynthesizer:
         if mx > 0:
             out /= mx
         if work != res:
-            out = zoom(out, res / work, order=1).astype(np.float32)
+            # cubic (order=3) upscale: bilinear (order=1) leaves axis-aligned
+            # interpolation streaks that stack into a faint radial "star" in the
+            # grid centre on busy presets (mountainous). mode='nearest' avoids
+            # cubic edge ringing/darkening at the borders.
+            out = zoom(out, res / work, order=3, mode="nearest").astype(np.float32)
+            out = np.clip(out, 0.0, 1.0)
             if out.shape[0] >= res:
                 out = out[:res, :res]
             else:
