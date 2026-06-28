@@ -23,6 +23,22 @@ Columns — keep them filled at evaluation time, not retroactively.
 > **Ground compositor (`spike/make_ground.py`) — the patchy-terrain capability.** Replicates how the *original* Forest3D made its Soil 1/2/3 references (single PBR material extracted from a `soil.blend` via `extract_terrain_texture`; the variation is whatever's baked into the source image, mapped at low tiling) **and extends it** with controllable variation the original lacks: seeded `patchy` mode bakes a 1:1 composite of a base + overlay layers (sand/gravel/pebble **patches** via seeded noise blobs, **trails** via explicit waypoints *or* random walk, soft mask edges, normals lerp+renormalised). `uniform` mode keeps the crisp tiled single material (feed a varied texture at low `--tile` to match the originals). Output is one `<pbr><metal>` material — the same path P2 proved in gz. Bake resolution is the only crispness lever (4K default ≈ 5 cm/texel ≈ ~78 MB for 3 maps; 8K sharper but ~4× footprint — like the originals, patchy is softer up close than uniform tiling, which the original accepted). Seeded → reproducible. **TODO:** fold into `forest3d terrain` as a `--ground-mode uniform|patchy` + layer/trail spec. Proof: `spike/ground_capability.png`, `spike/patchy_cam_*.png`, `spike/ground_topdown.png`.
 | tree-island_tree_01 | tree | Island Tree 01 (acacia-like, sparse foliage) | Poly Haven · https://polyhaven.com/a/island_tree_01 | **CC0** | 490 k tris visual (LOD1) / trunk-cylinder collision (~92 tris) | 2K albedo, 1K normal+rough | **102 MB glb** (textures embedded) | **P1 HERO — passes §7 checks.** Normalized via `spike/normalize_island_tree.py`: kept the LOD1 object (file ships LOD0 812k + LOD1 490k + kit pieces + geometry-nodes — exporting all = 1.7M overlapping tris), **rebuilt leaf material** as Principled BSDF (custom node GROUP in source is unreadable by the glTF exporter) with alpha→`Math:GreaterThan(0.5)`→Alpha so Blender 4.2 writes **alphaMode=MASK** (EEVEE-Next dropped CLIP; exporter now reads the node pattern, not `blend_method`), branches/trunk set OPAQUE (solid geometry), nor/rough downscaled to 1K. Converted with `configs/realism.yaml` (tree: visual 1.0 + skip-foliage + trunk_cylinder). Renders upright on GPU (NVIDIA, not llvmpipe) with **transparent foliage (sky between leaves)**, textured bark, cast shadows; ground lidar 2403/5760 returns. **glb 102 MB is over the §6 budget** → P3 TODO: drop to LOD-lower / 2K→1K albedo / decimate solid branches, target tens of MB. Proof: `spike/hero_closeup.png`, `spike/hero_sidebyside.png`, `spike/hero_cam_*.png`. |
 
+### Added for demo scenarios (overnight 2026-06-27) — all Poly Haven, **CC0**
+
+Fetched via `spike/fetch_polyhaven.py <id> 1k <dir>` (glTF bundle), normalized with
+`spike/import_gltf.py` (recenter + base-to-z0 + foliage-alpha MASK fix), converted with
+`forest3d -c configs/realism.yaml convert`. **Credit (CC0, attribution appreciated):**
+Poly Haven — https://polyhaven.com. Model binaries live under `models/` (gitignored,
+regenerable from these ids + scripts).
+
+| id | category | name | source + URL | license | notes |
+|----|----------|------|--------------|---------|-------|
+| rock-boulder_01 | rock | Boulder 01 | Poly Haven · https://polyhaven.com/a/boulder_01 | **CC0** | clean grey boulder, single material; gltf→convert (convex_hull). Renders textured. |
+| rock-namaqualand_rocks_01 | rock | Namaqualand Rocks 01 | Poly Haven · https://polyhaven.com/a/namaqualand_rocks_01 | **CC0** | small scattered pebbles/stones; ground-detail rock. |
+| tree-dead_tree_trunk_02 | tree | Dead Tree Trunk 02 | Poly Haven · https://polyhaven.com/a/dead_tree_trunk_02 | **CC0** | fallen/dead trunk; winter + forest-floor dressing. No foliage → OPAQUE, trivial. |
+| tree-fir_sapling | tree | Fir Sapling | Poly Haven · https://polyhaven.com/a/fir_sapling | **CC0** | young firs (clump of 3, scaled ×4); conifer foliage for SNOW scenes. **Gotcha:** Poly Haven's glTF omits the foliage alpha map (twigs export OPAQUE) — `import_gltf.py` downloads `twigs_alpha` separately and wires it via Math:GreaterThan→Alpha so it exports alphaMode=MASK. See [[blender42-gltf-mask-foliage]]. |
+| rock-namaqualand_boulder_04 | rock | (existing) | — | **CC0** | see row above. |
+
 > **Procedural terrain (`forest3d terraingen`, `core/terraingen.py`) — NO external asset.** The
 > landform itself is synthesized (numpy/scipy fBm + ridged noise, Gaussian peaks, carved
 > basins/creeks), written as a GeoTIFF DEM, and fed to the existing `forest3d terrain --dem`

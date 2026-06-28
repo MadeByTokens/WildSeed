@@ -13,11 +13,9 @@ Branch `feature/realism-convert-fork`. DO NOT push.
    FOSS) but **save credit info** for the docs.
 
 ## Plan / progress
-- [ ] PHASE 1 — docs/TERRAIN_GENERATOR.md + this STATE + commit
-- [ ] PHASE 2 — per-basin water: extend write_water_model (name/center/size),
-      `forest3d ground --auto-water` reads dem/<name>.lakes.json, places one plane
-      per basin at its own suggested level. Test + render lakeland. Commit.
-- [ ] PHASE 3a — acquire realistic CC0 assets (time-box ~2.5h): 2 rocks (easy,
+- [x] PHASE 1 — docs/TERRAIN_GENERATOR.md + STATE + commit (116a0d0)
+- [x] PHASE 2 — per-basin water --auto-water (f02e803). Verified clean discrete lakes.
+- [x] PHASE 3a — assets acquired+verified (boulder_01, namaqualand_rocks_01, dead_tree_trunk_02, fir_sapling; primitives moved to models/_primitives_aside). ORIG: (time-box ~2.5h): 2 rocks (easy,
       single-material like namaqualand), attempt 1-2 trees incl a conifer for snow,
       attempt 1 shrub. Convert via `forest3d convert` + normalize_island_tree.py
       pattern. Record source+license in spike/ASSET_REGISTRY.md for credits.
@@ -32,6 +30,9 @@ Branch `feature/realism-convert-fork`. DO NOT push.
 - [ ] PHASE 3c — docs/SCENARIOS.md + docs/TUTORIAL.md (install/docker, pipeline,
       randomization via --seed, per-scenario recipes). Update ASSET_REGISTRY credits.
 - [ ] PHASE 3d — send gallery + tutorial to user.
+- [ ] PHASE 4 — CLEANUP (user asked): remove stale files / old plans (e.g.
+      TERRAIN_GEN_PLAN.md now superseded by docs/), prune obsolete spike diag PNGs
+      kept only for the conversation, tidy loop/STATE at the very end. Commit.
 
 ## Key facts / gotchas (so recovery needs no re-derivation)
 - Render recipe: docker run --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all
