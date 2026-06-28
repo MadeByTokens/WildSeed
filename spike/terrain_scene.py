@@ -20,11 +20,13 @@ OUT = os.environ.get("OUT", "/workspace/worlds/terrain_scene.world")
 minx = miny = 1e18
 maxx = maxy = maxz = -1e18
 minz = 1e18
+verts = []
 with open(OBJ) as f:
     for line in f:
         if line.startswith("v "):
             p = line.split()
             x, y, z = float(p[1]), float(p[2]), float(p[3])
+            verts.append((x, y, z))
             minx, maxx = min(minx, x), max(maxx, x)
             miny, maxy = min(miny, y), max(maxy, y)
             minz, maxz = min(minz, z), max(maxz, z)
@@ -43,6 +45,16 @@ pitch = math.atan2(cz - az, math.hypot(ax - cx, ay - cy))
 
 # top-down
 tz = maxz + 0.95 * ext
+
+# low hero camera: stand low near a corner, eye ~3 m above the ground there, look
+# across the populated field toward the centre so trees/rocks read at human scale.
+hx, hy = -0.40 * ext, -0.30 * ext
+hgz = ground_z(hx, hy)
+hz = hgz + 3.0
+haim_x, haim_y = 0.18 * ext, 0.12 * ext
+haim_z = ground_z(haim_x, haim_y) + 6.0
+hyaw = math.atan2(haim_y - hy, haim_x - hx)
+hpitch = math.atan2(hz - haim_z, math.hypot(haim_x - hx, haim_y - hy))
 
 SHELL = f'''<?xml version='1.0' encoding='ASCII'?>
 <sdf version='1.8'>
@@ -88,6 +100,7 @@ def cam(name, x, y, z, pit, ya, fov=1.1, w=1100, h=750):
 
 parts.append(cam("cam_oblique", cx, cy, cz, pitch, yaw))
 parts.append(cam("cam_top", 0.0, 0.0, tz, 1.5708, 0.0, fov=1.2, w=900, h=900))
+parts.append(cam("cam_hero", hx, hy, hz, hpitch, hyaw, fov=1.25, w=1280, h=720))
 parts.append("  </world>\n</sdf>\n")
 open(OUT, "w").write("".join(parts))
 print(f"wrote {OUT}  oblique cam=({cx:.0f},{cy:.0f},{cz:.0f}) pitch={pitch:.2f} yaw={yaw:.2f}")
