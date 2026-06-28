@@ -22,11 +22,15 @@ class WorldPopulator:
     """
 
     # Scale ranges for each model category
+    # Phase C (DEMO_REALISM_V2): scale UP for a mature canopy + landmark boulders, and
+    # widen the ranges so per-instance size variation breaks repeated-feature aliasing
+    # (a repeated model at a repeated size yields repeated VIO features; varied size does
+    # not). Trees read tall/mature like the originals; the rock max gives hero boulders.
     SCALE_RANGES = {
-        "tree": (0.8, 1.5),
-        "rock": (0.5, 2.0),
-        "bush": (0.3, 1.0),
-        "grass": (0.2, 0.6),
+        "tree": (1.0, 2.2),
+        "rock": (0.6, 2.6),
+        "bush": (0.4, 1.2),
+        "grass": (0.25, 0.7),
         "sand": (1.0, 2.5),
     }
 

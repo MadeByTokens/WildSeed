@@ -164,6 +164,35 @@ is blob removal, not the warp. The warp's isolated effect is the autocorr-lattic
 eliminated. The big remaining gap is unchanged and is the headline for Phase C: **coverage
 0.56 vs 0.99** — the scenes are still under-populated.
 
+## AFTER PHASE C — density, variety, bigger trees
+
+Densities raised hard (build_scenarios.py) and `SCALE_RANGES` widened/scaled up
+(forest.py): trees read tall/mature (`tree` 0.8–1.5 → 1.0–2.2), rocks give landmark
+boulders (`rock` 0.5–2.0 → 0.6–2.6), understory bush/grass raised. Trees kept moderate
+in COUNT (each canopy tree ≈0.5 M tris) but big in SIZE; bush/grass/rock raised since
+they're light and spread discrete features (coverage + LIO structure).
+
+**Measured on the OBLIQUE cam** (the C signal — the elevated hero frame is ~40 % sky, so
+hero coverage is mechanically capped until the Phase D ground-level re-pose; judging C on
+the hero would misread it as failing):
+
+| scene             | oblique cov | oblique fast/MP | hero cov | hero fast/MP |
+|-------------------|-------------|-----------------|----------|--------------|
+| temperate_hills   | 0.70        | 3100            | 0.59     | 13672        |
+| savanna_flats     | 0.72        | 1928            | 0.59     | 12984        |
+| lakeland_wetland  | 0.72        | 2836            | 0.58     | 8373         |
+| alpine_snow       | 0.64        | 3566            | 0.61     | 11636        |
+| winter_forest     | 0.72        | 5022            | 0.97     | 12556        |
+| coastal_dune      | 0.72        | 5100            | 0.59     | 14374        |
+
+The fields are visibly populated (`spike/scenarios_overview.png`): trees scattered across
+every scene, conifers dotting the alpine/winter slopes, rich non-repeating ground, no
+trails, no black blobs. hero FAST/MP rose (e.g. temperate 11.9k → 13.7k) but hero coverage
+is still framing-capped — **that gap is closed in Phase D**, not by more density here.
+The island broadleaf trees carry a real (if olive/sparse-at-distance) canopy — verified
+leafy in `spike/asset_catalog.png` — so this is distance/LOD thinning, not the dead/winter
+look; acceptable within the CC0 ceiling.
+
 ## Status of the open items
 
 - **Black blobs** — RESOLVED in Phase B. (Earlier guess "distant silhouetted instances" was
