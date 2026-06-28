@@ -62,9 +62,14 @@ if os.environ.get("WATER") == "1":
     parts.append("    <include><name>water</name><uri>model://water</uri></include>\n")
 if os.environ.get("FOREST") == "1" and os.path.exists("/workspace/worlds/forest_world.world"):
     incs = ET.parse("/workspace/worlds/forest_world.world").getroot().find("world").findall("include")
+    n = 0
     for inc in incs:
+        uri = inc.findtext("uri", "")
+        if "model://ground" in uri or "model://water" in uri:
+            continue  # we add terrain/water ourselves; avoid duplicate model names
         parts.append("    " + ET.tostring(inc, encoding="unicode").strip() + "\n")
-    print(f"grafted {len(incs)} forest includes")
+        n += 1
+    print(f"grafted {n} forest includes")
 
 
 def cam(name, x, y, z, pit, ya, fov=1.1, w=1100, h=750):
