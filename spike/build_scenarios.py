@@ -34,28 +34,40 @@ BIOMES = yaml.safe_load(open(os.path.join(WS, "assets/manifest.yaml")))["biomes"
 
 # name, terraingen flags, biome(palette+ground), density, water, blurb
 SCN = [
-    dict(name="temperate_hills", biome="temperate",
-         tg=["--preset", "hilly", "--seed", "7", "--detail", "0.5"],
+    # Phase A (DEMO_REALISM_V2): terrain at robot/human scale. `detail` is dropped hard
+    # (kills sub-2 m fBm sponginess that aliases for LIO), `smooth` raised (anti-facet),
+    # `feature` set as the "tens of metres" rolling lever (independent of world size).
+    # `pixel` is now an explicit per-scene realism knob (held at 1.6 in A; the
+    # pixel/density decoupling happens in Phase C where density rises). alpine keeps
+    # real relief (higher detail/amplitude); temperate/coastal/savanna read smooth.
+    dict(name="temperate_hills", biome="temperate", pixel=1.6,
+         tg=["--preset", "hilly", "--seed", "7", "--amplitude", "26", "--feature", "110",
+             "--detail", "0.12", "--smooth", "1.6"],
          density={"tree": 90, "rock": 18, "bush": 70, "grass": 180}, water=False,
          blurb="Rolling green hills, broadleaf forest + understory"),
-    dict(name="savanna_flats", biome="savanna",
-         tg=["--preset", "hilly", "--seed", "3", "--amplitude", "14", "--detail", "0.4"],
+    dict(name="savanna_flats", biome="savanna", pixel=1.6,
+         tg=["--preset", "hilly", "--seed", "3", "--amplitude", "12", "--feature", "140",
+             "--detail", "0.10", "--smooth", "1.8"],
          density={"tree": 16, "rock": 34, "bush": 48, "grass": 140}, water=False,
          blurb="Arid flats, quiver trees + scrub + dry bloom"),
-    dict(name="lakeland_wetland", biome="wetland",
-         tg=["--preset", "lakeland", "--seed", "7"],
+    dict(name="lakeland_wetland", biome="wetland", pixel=1.6,
+         tg=["--preset", "lakeland", "--seed", "7", "--feature", "130",
+             "--detail", "0.12", "--smooth", "1.6"],
          density={"tree": 60, "rock": 14, "bush": 75, "grass": 150}, water=True,
          blurb="Basins holding water, reeds/ferns along the shores"),
-    dict(name="alpine_snow", biome="alpine",
-         tg=["--preset", "mountainous", "--seed", "7", "--ridged", "0.2", "--detail", "0.6"],
+    dict(name="alpine_snow", biome="alpine", pixel=1.6,
+         tg=["--preset", "mountainous", "--seed", "7", "--ridged", "0.3",
+             "--amplitude", "80", "--feature", "90", "--detail", "0.30", "--smooth", "1.2"],
          density={"tree": 40, "rock": 40, "bush": 24, "grass": 60}, water=False,
          blurb="SNOW - rugged massif, conifers + boulders"),
-    dict(name="winter_forest", biome="winter",
-         tg=["--preset", "valley", "--seed", "5", "--detail", "0.6"],
+    dict(name="winter_forest", biome="winter", pixel=1.6,
+         tg=["--preset", "valley", "--seed", "5", "--feature", "100",
+             "--detail", "0.18", "--smooth", "1.5"],
          density={"tree": 80, "rock": 18, "bush": 0, "grass": 70}, water=False,
          blurb="SNOW - snowy valley, conifers + dead trunks"),
-    dict(name="coastal_dune", biome="coastal",
-         tg=["--preset", "hilly", "--seed", "11", "--amplitude", "9", "--detail", "0.35"],
+    dict(name="coastal_dune", biome="coastal", pixel=1.6,
+         tg=["--preset", "hilly", "--seed", "11", "--amplitude", "7", "--feature", "150",
+             "--detail", "0.10", "--smooth", "2.0"],
          density={"tree": 18, "rock": 24, "bush": 60, "grass": 140}, water=False,
          blurb="Coastal dune, marram grass + dune shrubs + coast rocks"),
 ]
@@ -134,10 +146,11 @@ for s in SCN:
     pal = BIOMES[biome]
     ground = pal.get("ground", "grassland")
     print(f"=== {name} (biome={biome}, ground={ground}) ===", flush=True)
-    # --pixel 1.6 -> ~307 m world (vs 480 m at the 2.5 default): same plant sizes read
-    # bigger/denser, so scenes look populated rather than a few specks on a vast hill.
-    run(CLI + ["terraingen"] + s["tg"] + ["--size", "192", "--pixel", "1.6",
-               "-o", "dem/synth.tif"])
+    # pixel is a per-scene realism knob (Phase A); 1.6 -> ~307 m world at size 192.
+    # Terrain SHAPE (rolling scale, smoothness) is set via feature/detail/smooth in
+    # s["tg"]; density (Phase C) is decoupled from world size.
+    run(CLI + ["terraingen"] + s["tg"] + ["--size", "192",
+               "--pixel", str(s.get("pixel", 1.6)), "-o", "dem/synth.tif"])
     run(CLI + ["terrain", "--dem", "dem/synth.tif"])
     run(CLI + ["ground", "--mode", "patchy", "--biome", ground, "--seed", "7", "--res", "4096"])
     for d in os.listdir(MODELS):

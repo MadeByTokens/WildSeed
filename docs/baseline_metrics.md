@@ -88,6 +88,35 @@ originals' counts — this is the CC0/biome ceiling, stated honestly, not a numb
 4. **FAST/MP at 59 %** of target — secondary (contaminated; see caveat), but directionally
    confirms under-population.
 
+## AFTER PHASE A — terrain at robot/human scale
+
+Terrain shape only: `detail` dropped hard (0.5→0.12 temperate etc.; kills sub-2 m fBm
+sponginess), `smooth` raised, `feature_m` set as the rolling-scale lever; alpine keeps
+real relief (detail 0.30). `pixel` held at 1.6 (world size unchanged) so the delta is
+attributable to terrain shape, not framing/density.
+
+| scene                  | ORB/MP | FAST/MP | cov  | unif | tilePk | period | top.tilePk |
+|------------------------|--------|---------|------|------|--------|--------|------------|
+| temperate_hills        |   3377 |   14800 | 0.56 | 0.00 | 0.341 |   243 | 0.263      |
+| savanna_flats          |   3013 |    8314 | 0.59 | 0.00 | 0.346 |   278 | 0.246      |
+| lakeland_wetland       |   3793 |   10597 | 0.53 | 0.00 | 0.371 |   295 | 0.281      |
+| alpine_snow            |   3536 |    9637 | 0.56 | 0.00 | 0.125 |   128 | 0.134      |
+| winter_forest          |   4986 |    7148 | 0.84 | 0.00 | 0.070 |   333 | 0.170      |
+| coastal_dune           |   4205 |    9459 | 0.62 | 0.00 | 0.367 |   221 | 0.155      |
+
+**Reading the delta (comparable biomes):** coverage 0.62→0.58 and FAST/MP 59%→47% — a
+small, *expected* dip: lowering `detail` removed fbm surface noise that was registering as
+fake features (real structure comes from objects in Phase C, not ground noise). Crucially,
+the green-scene **hero tilePk rose** (lakeland 0.18→0.37, temperate 0.30→0.34): smoothing
+the terrain *exposed* the tiled ground texture that the surface noise was masking. This
+confirms hero tilePk was never purely "tiled base ground" — and it sets up a clean,
+attributable Phase B fix (break the ground tiling and this drops). Terrain reads smooth in
+`spike/scenarios_overview.png`; alpine retains rugged relief. Gate met: smooth + no
+*unexplained* feature regression.
+
+> Note: per the framing caveat, the Phase B gate is judged on **top.tilePk** (ground always
+> fills the top-down frame; hero ground will shrink once Phase D re-poses the cameras).
+
 ## Open items carried into later phases (not Phase 0 bugs)
 
 - **Black blobs in temperate_hills** (round dark dots): **verified NOT the BLEND-foliage
