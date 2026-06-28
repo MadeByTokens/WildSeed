@@ -182,6 +182,7 @@ class TerrainGenConfig(BaseModel):
     octaves: Optional[int] = Field(default=None, ge=1, le=10, description="fBm octave count.")
     feature_m: Optional[float] = Field(default=None, gt=0.0, description="Largest hill feature size (metres).")
     ridged: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Ridged-noise blend (sharper valleys/ridges).")
+    detail: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Fine-octave weight (1=full surface detail, 0=smooth slopes); keeps the macro hill/mountain pattern.")
     slope_m: Optional[float] = Field(default=None, ge=0.0, description="Planar tilt added across the map (metres).")
     valley: Optional[bool] = Field(default=None, description="Carve a central trough.")
     n_peaks: Optional[int] = Field(default=None, ge=0, le=50, description="Number of Gaussian peaks/mounts.")

@@ -22,6 +22,7 @@ DEFAULT_OUT = "./dem/synth.tif"
 @click.option("--octaves", type=int, default=None, help="Override fBm octave count.")
 @click.option("--feature", "feature_m", type=float, default=None, help="Override largest hill feature size (m).")
 @click.option("--ridged", type=float, default=None, help="Override ridged-noise blend (0-1).")
+@click.option("--detail", type=float, default=None, help="Fine-surface detail 0-1 (1=full/spongy, 0=smooth slopes; keeps macro hills).")
 @click.option("--slope", "slope_m", type=float, default=None, help="Override planar tilt across map (m).")
 @click.option("--peaks", "n_peaks", type=int, default=None, help="Override number of peaks/mounts.")
 @click.option("--basins", "n_basins", type=int, default=None, help="Override number of basins (lakes).")
@@ -30,7 +31,7 @@ DEFAULT_OUT = "./dem/synth.tif"
 @click.option("--smooth", "smooth_sigma", type=float, default=None, help="Final anti-facet smooth sigma px (default 0.8).")
 @click.pass_context
 def terraingen(ctx, preset, seed, resolution, pixel_m, out_path, amplitude_m, roughness,
-               octaves, feature_m, ridged, slope_m, n_peaks, n_basins, n_creeks,
+               octaves, feature_m, ridged, detail, slope_m, n_peaks, n_basins, n_creeks,
                edge_taper, smooth_sigma):
     """Synthesize a seeded procedural terrain as a GeoTIFF DEM.
 
@@ -42,14 +43,16 @@ def terraingen(ctx, preset, seed, resolution, pixel_m, out_path, amplitude_m, ro
         forest3d terraingen --preset hilly --seed 7 --size 192 -o dem/synth.tif
         forest3d terraingen --preset lakeland --seed 7 -o dem/lake.tif
         forest3d terraingen --preset mountainous --seed 3 --amplitude 100
+        # smooth surface, SAME hill pattern (tame the "spongy" look):
+        forest3d terraingen --preset hilly --seed 7 --detail 0.2
     """
     console = ctx.obj["console"]
 
     kwargs = dict(preset=preset, seed=seed, resolution=resolution, pixel_m=pixel_m)
     for name, val in dict(
         amplitude_m=amplitude_m, roughness=roughness, octaves=octaves, feature_m=feature_m,
-        ridged=ridged, slope_m=slope_m, n_peaks=n_peaks, n_basins=n_basins, n_creeks=n_creeks,
-        edge_taper=edge_taper, smooth_sigma=smooth_sigma,
+        ridged=ridged, detail=detail, slope_m=slope_m, n_peaks=n_peaks, n_basins=n_basins,
+        n_creeks=n_creeks, edge_taper=edge_taper, smooth_sigma=smooth_sigma,
     ).items():
         if val is not None:
             kwargs[name] = val

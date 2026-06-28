@@ -46,6 +46,29 @@ def test_amplitude_drives_relief():
     assert np.ptp(big) > np.ptp(small) * 3
 
 
+def test_detail_default_unchanged():
+    # detail=1.0 (default) must reproduce the plain fBm exactly (backward compat)
+    a, _ = _synth(preset="hilly", seed=8)
+    b, _ = _synth(preset="hilly", seed=8, detail=1.0)
+    assert np.array_equal(a, b)
+
+
+def test_detail_smooths_surface_keeps_macro():
+    from scipy.ndimage import gaussian_filter
+
+    full, _ = _synth(preset="hilly", seed=8, detail=1.0, n_peaks=0, n_basins=0, n_creeks=0)
+    low, _ = _synth(preset="hilly", seed=8, detail=0.0, n_peaks=0, n_basins=0, n_creeks=0)
+    # local high-frequency roughness (residual after blurring) must drop
+    def hf(h):
+        return float(np.abs(h - gaussian_filter(h, sigma=3)).mean())
+    assert hf(low) < hf(full) * 0.6
+    # macro shape preserved: low-pass versions stay highly correlated
+    fl = gaussian_filter(full, sigma=12).ravel()
+    ll = gaussian_filter(low, sigma=12).ravel()
+    corr = float(np.corrcoef(fl, ll)[0, 1])
+    assert corr > 0.95
+
+
 def test_preset_registry_matches_schema():
     assert set(PRESET_NAMES) == set(PRESETS.keys())
 

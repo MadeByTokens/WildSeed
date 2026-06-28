@@ -82,7 +82,7 @@ _FEATURE_DEFAULTS = dict(
     peak_h_m=(20.0, 45.0), peak_r_m=(25.0, 50.0),
     basin_depth_m=(6.0, 10.0), basin_r_m=(28.0, 45.0),
     creek_depth_m=2.0, creek_width_m=12.0,
-    edge_taper=0.12, smooth_sigma=0.8,
+    edge_taper=0.12, smooth_sigma=0.8, detail=1.0,
 )
 
 
@@ -112,23 +112,40 @@ class TerrainSynthesizer:
         return _FEATURE_DEFAULTS.get(key, default)
 
     # ---- noise primitives ------------------------------------------------- #
+    # Octaves kept at full weight before `detail` starts attenuating (these carry
+    # the macro/meso landform -- mountains, hills, rolling undulation).
+    _MACRO_OCTAVES = 3
+
     @staticmethod
     def _fbm01(res: int, rng: np.random.Generator, octaves: int,
-               feature_m: float, pixel_m: float, roughness: float) -> np.ndarray:
-        """fBm value noise in [0,1]. Coarse-then-zoom (full-res filter is slow)."""
+               feature_m: float, pixel_m: float, roughness: float,
+               detail: float = 1.0) -> np.ndarray:
+        """fBm value noise in [0,1]. Coarse-then-zoom (full-res filter is slow).
+
+        `detail` (0..1) scales only the FINE octaves (index >= _MACRO_OCTAVES),
+        leaving the macro/meso octaves untouched -- so it controls local surface
+        smoothness ("sponginess") while preserving the global hill/mountain
+        pattern. `detail == 1.0` reproduces the plain fBm exactly. `roughness`
+        (persistence) instead attenuates *all* octaves above the first, so it
+        flattens the rolling mid-scale character along with the fine bumps.
+        """
+        octaves = max(int(octaves), 1)
+        macro = min(TerrainSynthesizer._MACRO_OCTAVES, octaves)
+        detail = float(np.clip(detail, 0.0, 1.0))
         work = int(min(res, 256))
         # feature size of the coarsest octave, in working-grid pixels
         sigma = max(feature_m / pixel_m * work / res, 1.0)
         out = np.zeros((work, work), np.float32)
         amp, total = 1.0, 0.0
-        for _ in range(max(int(octaves), 1)):
+        for i in range(octaves):
             n = gaussian_filter(rng.standard_normal((work, work)).astype(np.float32),
                                 sigma=max(sigma, 0.8))
-            out += amp * n
-            total += amp
+            w = amp if i < macro else amp * detail  # attenuate fine octaves only
+            out += w * n
+            total += w
             amp *= roughness
             sigma *= 0.5
-        out /= total
+        out /= total if total > 0 else 1.0
         out -= out.min()
         mx = out.max()
         if mx > 0:
@@ -191,9 +208,10 @@ class TerrainSynthesizer:
         ridged = float(self._p("ridged", 0.0))
         slope_m = float(self._p("slope_m", 0.0))
         valley = bool(self._p("valley", False))
+        detail = float(self._p("detail", 1.0))
 
         # 1. base field in [0,1]
-        g = self._fbm01(res, rng, octaves, feature_m, pixel_m, roughness)
+        g = self._fbm01(res, rng, octaves, feature_m, pixel_m, roughness, detail)
         if ridged > 0.0:
             g = (1.0 - ridged) * g + ridged * (1.0 - np.abs(2.0 * g - 1.0))
         if valley:
