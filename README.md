@@ -98,11 +98,20 @@ Density is fully tunable per category — `forest3d generate --density
 ### Reproducibility
 
 The Docker image is **version-pinned** so a rebuild can't drift when an upstream
-library changes: base image by digest, `gz-harmonic` + Blender 4.2.3 (checksum-verified)
-+ all Python deps frozen in [`docker/constraints.txt`](docker/constraints.txt). The demo
-asset set is pinned in [`assets/manifest.yaml`](assets/manifest.yaml) with sha256s in
-`assets/manifest.lock.yaml`, fetched credential-free from Poly Haven. All demo assets are
-CC0; credits in [spike/ASSET_REGISTRY.md](spike/ASSET_REGISTRY.md).
+library changes: base image by digest, `gz-harmonic`=1.0.0-1~jammy + Blender 4.2.3
+(checksum-verified) + all Python deps frozen in
+[`docker/constraints.txt`](docker/constraints.txt) (PyPI keeps old versions, so these
+are durable). The demo asset set is pinned in
+[`assets/manifest.yaml`](assets/manifest.yaml) with source sha256s in
+`assets/manifest.lock.yaml`, fetched **credential-free** from Poly Haven (all CC0;
+credits in [spike/ASSET_REGISTRY.md](spike/ASSET_REGISTRY.md)).
+
+> **Residual apt risk — archive the image for a true freeze.** The OSRF (`gz-harmonic`)
+> and Ubuntu (`gdal-bin`, etc.) apt repos serve only the *current* version, so a far-future
+> `docker build` can fail if they drop `1.0.0-1~jammy` / bump GDAL (which could also break
+> the numpy-1.26 ABI pairing). A Dockerfile can't pin a repo that deletes old debs. For a
+> guaranteed-reproducible artifact, **save the built image**, don't rely on rebuilding:
+> `docker save forest3d:egl | gzip > forest3d-egl-v1.tar.gz` (or push to a registry).
 
 ## Features
 
