@@ -59,7 +59,13 @@ SHELL = f'''<?xml version='1.0' encoding='ASCII'?>
 '''
 parts = [SHELL]
 if os.environ.get("WATER") == "1":
-    parts.append("    <include><name>water</name><uri>model://water</uri></include>\n")
+    # include every water* model dir (single 'water' or per-basin water_0/water_1/...)
+    mroot = "/workspace/models"
+    waters = sorted(d for d in os.listdir(mroot)
+                    if d.startswith("water") and os.path.isdir(os.path.join(mroot, d)))
+    for w in waters:
+        parts.append(f"    <include><name>{w}</name><uri>model://{w}</uri></include>\n")
+    print(f"water models: {waters}")
 if os.environ.get("FOREST") == "1" and os.path.exists("/workspace/worlds/forest_world.world"):
     incs = ET.parse("/workspace/worlds/forest_world.world").getroot().find("world").findall("include")
     n = 0

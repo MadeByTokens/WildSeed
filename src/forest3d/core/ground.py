@@ -382,24 +382,38 @@ class GroundCompositor:
         (self.ground_dir / "model.sdf").write_text(sdf)
 
 
-def write_water_model(models_dir: Path, extent_m: Tuple[float, float], level: float) -> Path:
-    """Write a flat translucent water plane model at Z=level covering the terrain.
+def write_water_model(
+    models_dir: Path,
+    extent_m: Tuple[float, float],
+    level: float,
+    name: str = "water",
+    center_xy: Tuple[float, float] = (0.0, 0.0),
+    size_m: Optional[Tuple[float, float]] = None,
+) -> Path:
+    """Write a flat translucent water plane model at Z=level.
 
-    A simple visual approximation (no waves/refraction) suitable for flooding low
-    areas in a sim scenario.
+    A simple visual approximation (no waves/refraction). By default the plane
+    covers the whole terrain (single global level). Pass ``name``/``center_xy``/
+    ``size_m`` to write a smaller, positioned plane for one basin -- the flat plane
+    is occluded wherever the terrain rises above ``level``, so a per-basin plane
+    sized a bit larger than the basin shows water only inside the bowl.
     """
-    wdir = Path(models_dir) / "water"
+    wdir = Path(models_dir) / name
     wdir.mkdir(parents=True, exist_ok=True)
-    sx, sy = extent_m[0] * 1.1, extent_m[1] * 1.1
+    if size_m is None:
+        sx, sy = extent_m[0] * 1.1, extent_m[1] * 1.1
+    else:
+        sx, sy = size_m
+    cx, cy = center_xy
     (wdir / "model.config").write_text(
-        '<?xml version="1.0"?>\n<model>\n  <name>water</name>\n  <version>1.0</version>\n'
-        '  <sdf version="1.8">model.sdf</sdf>\n  <description>Flat water plane</description>\n</model>\n'
+        f'<?xml version="1.0"?>\n<model>\n  <name>{name}</name>\n  <version>1.0</version>\n'
+        f'  <sdf version="1.8">model.sdf</sdf>\n  <description>Flat water plane</description>\n</model>\n'
     )
     (wdir / "model.sdf").write_text(f'''<?xml version="1.0" ?>
 <sdf version="1.8">
-    <model name="water">
+    <model name="{name}">
         <static>true</static>
-        <pose>0 0 {level:.3f} 0 0 0</pose>
+        <pose>{cx:.3f} {cy:.3f} {level:.3f} 0 0 0</pose>
         <link name="link">
             <visual name="visual">
                 <geometry><plane><normal>0 0 1</normal><size>{sx:.2f} {sy:.2f}</size></plane></geometry>
@@ -414,3 +428,26 @@ def write_water_model(models_dir: Path, extent_m: Tuple[float, float], level: fl
     </model>
 </sdf>''')
     return wdir
+
+
+def write_basin_water_models(models_dir: Path, lakes: List[dict],
+                             size_factor: float = 2.6) -> List[Path]:
+    """Write one water plane per basin, each at its own suggested level.
+
+    ``lakes`` is the list from terraingen's ``<dem>.lakes.json`` sidecar
+    (``center_xy_m``, ``radius_m``, ``suggested_water_level``). Each plane is sized
+    to ``size_factor * radius`` so it fills the bowl; the flat plane is hidden where
+    the terrain rises above its level, so per-basin levels don't flood the rest of
+    the map the way a single global plane does. Returns the written model dirs.
+    """
+    dirs = []
+    for i, lk in enumerate(lakes):
+        cx, cy = lk.get("center_xy_m", [0.0, 0.0])
+        r = float(lk.get("radius_m", 30.0))
+        level = float(lk.get("suggested_water_level", 0.0))
+        s = size_factor * r
+        dirs.append(write_water_model(
+            models_dir, (0.0, 0.0), level,
+            name=f"water_{i}", center_xy=(float(cx), float(cy)), size_m=(s, s),
+        ))
+    return dirs

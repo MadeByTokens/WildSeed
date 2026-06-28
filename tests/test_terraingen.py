@@ -114,6 +114,20 @@ def test_creek_carves_visible_channel():
     assert float(diff.max()) > 3.0
 
 
+def test_per_basin_water_models(tmp_path):
+    from forest3d.core.ground import write_basin_water_models
+    _, lakes = _synth(preset="lakeland", seed=11)
+    assert len(lakes) >= 1
+    dirs = write_basin_water_models(tmp_path, lakes)
+    assert len(dirs) == len(lakes)
+    for i, (lk, d) in enumerate(zip(lakes, dirs)):
+        sdf = (d / "model.sdf").read_text()
+        assert f'name="water_{i}"' in sdf
+        # pose carries the basin's own level and centre (per-basin, not global)
+        assert f"{lk['suggested_water_level']:.3f}" in sdf
+        assert (d / "model.config").exists()
+
+
 @pytest.mark.skipif(not GDAL_AVAILABLE, reason="GDAL not installed")
 def test_geotiff_roundtrip(tmp_path):
     from osgeo import gdal
