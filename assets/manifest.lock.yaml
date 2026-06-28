@@ -51,10 +51,6 @@ assets:
     category: tree
     sha256: 424746755d270ad50c020c0fe08fe9f0927e655e1ae26d66964d3a3360dd0cd9
     source: polyhaven:island_tree_02
-  jacaranda_tree:
-    category: tree
-    sha256: e28e9ea0deb782a830420126b3c5536bde44d1b532cbfb4dccbcc0e46119a0ce
-    source: polyhaven:jacaranda_tree
   namaqualand_boulder_04:
     category: rock
     sha256: null

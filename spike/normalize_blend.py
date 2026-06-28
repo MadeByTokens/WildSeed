@@ -37,14 +37,35 @@ if not all_meshes:
 # Keep a single LOD. Default = lowest-numbered _LODn present (highest detail);
 # pass want_lod to trade quality for size (LOD1/2 are far lighter for trees).
 lod_re = re.compile(r"_LOD(\d+)$")
+var_re = re.compile(r"_([a-z])_LOD\d+$")   # kit-part suffix, e.g. _leaves_a_LOD1
 lods = sorted({int(m.group(1)) for o in all_meshes if (m := lod_re.search(o.name))})
 if lods:
     keep_lod = want_lod if (want_lod in lods) else lods[0]
-    vl_meshes = [o for o in all_meshes
-                 if (m := lod_re.search(o.name)) and int(m.group(1)) == keep_lod]
+    at_lod = [o for o in all_meshes
+              if (m := lod_re.search(o.name)) and int(m.group(1)) == keep_lod]
     print(f"LODS {lods} -> keeping LOD{keep_lod}")
 else:
-    vl_meshes = all_meshes
+    at_lod = all_meshes
+
+# Poly Haven tree blends ship the ASSEMBLED tree (`<id>_LOD<n>`) AND the individual kit
+# pieces used to build it (`<id>_branches_a_LOD<n>`, `<id>_leaves_b_LOD<n>`, ...). Prefer
+# the assembled object (a complete tree). Only when there is NO assembled object is this a
+# pure kit (shrub/grass clumps a..i) -> pick one variant. (Earlier bug: the variant filter
+# kept just one tiny kit piece and dropped the 490k-tri assembled tree -> 551-tri "trees".)
+assembled = [o for o in at_lod if lod_re.search(o.name) and not var_re.search(o.name)]
+if assembled:
+    vl_meshes = assembled
+    print(f"ASSEMBLED -> {[o.name for o in assembled]}")
+else:
+    variants = sorted({m.group(1) for o in at_lod if (m := var_re.search(o.name))})
+    if variants:
+        pick = want_variant if (want_variant in variants) else variants[0]
+        vl_meshes = [o for o in at_lod
+                     if (m := var_re.search(o.name)) and m.group(1) == pick]
+        print(f"KIT_VARIANTS {variants} -> picked {pick!r}")
+    else:
+        vl_meshes = at_lod
+
 # Ensure the kept objects are linked into the active view layer (some LODs aren't).
 for o in vl_meshes:
     if o.name not in bpy.context.view_layer.objects:
@@ -52,15 +73,6 @@ for o in vl_meshes:
             scene_coll.objects.link(o)
         except RuntimeError:
             pass
-
-# Keep a single variant for "kit" assets: names like <base>_<letter>_LOD<n>.
-var_re = re.compile(r"_([a-z])_LOD\d+$")
-variants = sorted({m.group(1) for o in vl_meshes if (m := var_re.search(o.name))})
-if variants:
-    pick = want_variant if (want_variant in variants) else variants[0]
-    vl_meshes = [o for o in vl_meshes
-                 if (m := var_re.search(o.name)) and m.group(1) == pick]
-    print(f"KIT_VARIANTS {variants} -> picked {pick!r}")
 
 keep = set(o.name for o in vl_meshes)
 # Drop everything we are not keeping (other LODs, other variants, helper objects).
