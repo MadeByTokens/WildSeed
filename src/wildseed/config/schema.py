@@ -157,7 +157,7 @@ class GroundLayerSpec(BaseModel):
 class GroundConfig(BaseModel):
     """Procedural ground material configuration (uniform or seeded patchy)."""
 
-    mode: str = Field(default="uniform", description="'uniform' (tiled single texture) or 'patchy' (baked composite).")
+    mode: str = Field(default="uniform", description="'uniform' (tiled single texture), 'patchy' (baked composite), or 'wild' (seeded unrealistic domain-randomization patterns; no texture packs needed).")
     biome: str = Field(default="grassland", description="Preset: grassland | desert | gravel | snow.")
     seed: int = Field(default=0, description="RNG seed; same seed -> same ground (reproducible scenarios).")
     resolution: int = Field(default=4096, ge=512, le=16384, description="Patchy bake resolution (px).")
@@ -174,12 +174,18 @@ class GroundConfig(BaseModel):
     water_level: Optional[float] = Field(
         default=None, description="If set, add a flat water plane at this terrain-Z height (metres)."
     )
+    hsv_jitter: float = Field(
+        default=0.0, ge=0.0, le=1.0,
+        description="Seeded hue/saturation/value shift of the baked ground albedo "
+                    "(0 = off, 1 = strong). Domain randomization for perception "
+                    "training: same seed -> same shift."
+    )
 
     @field_validator("mode")
     @classmethod
     def _valid_mode(cls, v):
-        if v not in ("uniform", "patchy"):
-            raise ValueError("mode must be 'uniform' or 'patchy'")
+        if v not in ("uniform", "patchy", "wild"):
+            raise ValueError("mode must be 'uniform', 'patchy' or 'wild'")
         return v
 
     @field_validator("texture_root", mode="before")

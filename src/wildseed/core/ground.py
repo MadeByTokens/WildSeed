@@ -257,12 +257,36 @@ class GroundCompositor:
             pts.append((a, t) if horizontal else (t, a))
         return pts
 
+    # ---- domain randomization -------------------------------------------- #
+    @staticmethod
+    def _hsv_jitter_rgb(alb: np.ndarray, rng: np.random.Generator, strength: float) -> np.ndarray:
+        """Seeded global hue/sat/value shift of an RGB float image.
+
+        Domain randomization (Tobin et al. 2017 style): perception stacks trained
+        on colour-perturbed renders generalize better, even when the recolour is
+        unrealistic. One global shift keeps the texture's spatial structure (and
+        the normal/roughness registration) intact.
+        """
+        from PIL import Image
+        u8 = (np.clip(alb, 0, 1) * 255).astype(np.uint8)
+        hsv = np.asarray(Image.fromarray(u8, "RGB").convert("HSV"), dtype=np.float32)
+        dh = rng.uniform(-0.5, 0.5) * strength * 255.0
+        ds = 1.0 + rng.uniform(-0.6, 0.6) * strength
+        dv = 1.0 + rng.uniform(-0.4, 0.4) * strength
+        h = np.mod(hsv[..., 0] + dh, 256.0)
+        s = np.clip(hsv[..., 1] * ds, 0, 255)
+        v = np.clip(hsv[..., 2] * dv, 0, 255)
+        out = Image.fromarray(np.stack([h, s, v], axis=-1).astype(np.uint8), "HSV").convert("RGB")
+        return np.asarray(out, dtype=np.float32) / 255.0
+
     # ---- top-level generate ---------------------------------------------- #
     def generate(self) -> dict:
         cfg = self.config
         mode = getattr(cfg, "mode", "patchy")
         if mode == "uniform":
             return self._generate_uniform()
+        if mode == "wild":
+            return self._generate_wild()
         return self._generate_patchy()
 
     def _generate_uniform(self) -> dict:
@@ -270,12 +294,70 @@ class GroundCompositor:
         biome = BIOMES.get(getattr(cfg, "biome", "grassland"), BIOMES["grassland"])
         base = getattr(cfg, "base_material", None) or biome["base"]
         alb, nor, rgh = self.material(base)
+        jitter = float(getattr(cfg, "hsv_jitter", 0.0) or 0.0)
+        if jitter > 0:
+            rng = np.random.default_rng(int(getattr(cfg, "seed", 0)))
+            alb = self._hsv_jitter_rgb(alb, rng, jitter)
         self._write_maps(self._to8(alb), self._to8(nor) if nor is not None else None,
                          self._to8(rgh) if rgh is not None else None)
         self.set_uv(getattr(cfg, "uniform_tile", 8.0))
         self.write_sdf(has_normal=nor is not None, has_rough=rgh is not None)
-        logger.info(f"ground: uniform base={base} tile=x{getattr(cfg, 'uniform_tile', 8.0)}")
-        return {"mode": "uniform", "base": base}
+        logger.info(f"ground: uniform base={base} tile=x{getattr(cfg, 'uniform_tile', 8.0)} jitter={jitter}")
+        return {"mode": "uniform", "base": base, "hsv_jitter": jitter}
+
+    def _generate_wild(self) -> dict:
+        """Fully procedural, deliberately UNREALISTIC ground (domain randomization).
+
+        No texture packs needed: a seeded composition of random colour ramps,
+        blobs, stripes and checkers. Normal map is flat; roughness is seeded
+        noise. Same seed -> same ground, like every other mode.
+        """
+        cfg = self.config
+        res = int(min(int(getattr(cfg, "resolution", 4096)), 2048))
+        seed = int(getattr(cfg, "seed", 0))
+        rng = np.random.default_rng(seed)
+        extent = self._extent_m()
+
+        def rand_color():
+            return rng.random(3).astype(np.float32)
+
+        # base: two random colours lerped through large-scale organic noise
+        base_noise = self._fractal_noise(res, res / float(rng.uniform(4.0, 12.0)), rng)
+        c1, c2 = rand_color(), rand_color()
+        alb = c1[None, None, :] + (c2 - c1)[None, None, :] * base_noise[..., None]
+
+        yy, xx = np.mgrid[0:res, 0:res].astype(np.float32) / res
+        styles = []
+        for _ in range(int(rng.integers(1, 4))):  # 1-3 overlays
+            style = str(rng.choice(["blobs", "stripes", "checker", "noise"]))
+            col = rand_color()
+            if style == "blobs":
+                m = self._patch_mask(res, float(rng.uniform(0.1, 0.4)),
+                                     float(rng.uniform(5.0, 40.0)), rng, extent)
+            elif style == "stripes":
+                theta = float(rng.uniform(0, np.pi))
+                period_px = float(rng.uniform(res / 40.0, res / 6.0))
+                phase = (xx * np.cos(theta) + yy * np.sin(theta)) * res / period_px
+                m = ((np.sin(2 * np.pi * phase) * 0.5 + 0.5) > 0.5).astype(np.float32)
+            elif style == "checker":
+                k = int(rng.integers(4, 24))
+                m = (((xx * k).astype(int) + (yy * k).astype(int)) % 2).astype(np.float32)
+            else:  # noise
+                m = self._fractal_noise(res, res / float(rng.uniform(8.0, 32.0)), rng)
+            alpha = float(rng.uniform(0.4, 1.0))
+            m3 = (m * alpha)[..., None]
+            alb = alb * (1 - m3) + col[None, None, :] * m3
+            styles.append(style)
+
+        rgh = self._fractal_noise(res, res / 10.0, rng) * 0.8 + 0.2
+        rgh = np.repeat(rgh[..., None], 3, axis=2)
+        nor = np.full((res, res, 3), [0.5, 0.5, 1.0], np.float32)
+
+        self._write_maps(self._to8(alb), self._to8(nor), self._to8(rgh))
+        self.set_uv(None)
+        self.write_sdf(has_normal=True, has_rough=True)
+        logger.info(f"ground: wild seed={seed} res={res} overlays={styles}")
+        return {"mode": "wild", "seed": seed, "res": res, "styles": styles}
 
     def _generate_patchy(self) -> dict:
         cfg = self.config
@@ -352,12 +434,16 @@ class GroundCompositor:
             nor = self._blend_normal(nor, on, m)
             applied.append(f"{key}:{spec.get('kind')}")
 
+        jitter = float(getattr(cfg, "hsv_jitter", 0.0) or 0.0)
+        if jitter > 0:
+            alb = self._hsv_jitter_rgb(alb, rng, jitter)
+
         self._write_maps(self._to8(alb), self._to8(nor), self._to8(rgh))
         self.set_uv(None)
         self.write_sdf(has_normal=True, has_rough=True)
-        logger.info(f"ground: patchy biome={biome_name} seed={seed} res={res} base={base_key} layers={applied}")
+        logger.info(f"ground: patchy biome={biome_name} seed={seed} res={res} base={base_key} layers={applied} jitter={jitter}")
         return {"mode": "patchy", "biome": biome_name, "seed": seed, "res": res,
-                "base": base_key, "layers": applied}
+                "base": base_key, "layers": applied, "hsv_jitter": jitter}
 
     # ---- io --------------------------------------------------------------- #
     @staticmethod

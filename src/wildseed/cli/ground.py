@@ -12,8 +12,12 @@ from wildseed.config.schema import GroundConfig
               help="Terrain model dir (must already contain mesh/terrain.obj). Default: ./models/ground")
 @click.option("--texture-root", "-t", type=click.Path(), default="./Blender-Assets/soil",
               help="Directory of CC0 ground texture packs. Default: ./Blender-Assets/soil")
-@click.option("--mode", type=click.Choice(["uniform", "patchy"]), default=None,
-              help="uniform (crisp tiled) or patchy (seeded baked composite).")
+@click.option("--mode", type=click.Choice(["uniform", "patchy", "wild"]), default=None,
+              help="uniform (crisp tiled), patchy (seeded baked composite), or wild "
+                   "(seeded unrealistic domain-randomization patterns; no texture packs).")
+@click.option("--hsv-jitter", type=click.FloatRange(0.0, 1.0), default=None,
+              help="Seeded hue/sat/value shift of the baked albedo (0=off .. 1=strong). "
+                   "Texture domain randomization for perception training.")
 @click.option("--biome", type=click.Choice(["grassland", "desert", "gravel", "snow"]), default=None,
               help="Biome preset.")
 @click.option("--seed", type=int, default=None, help="RNG seed (same seed -> same ground).")
@@ -30,8 +34,9 @@ from wildseed.config.schema import GroundConfig
               help="Synth DEM path; its <stem>.lakes.json drives --auto-water.")
 @click.option("--models-dir", type=click.Path(), default="./models", help="Models root (for water). Default: ./models")
 @click.pass_context
-def ground(ctx, ground_dir, texture_root, mode, biome, seed, resolution, base_material,
-           uniform_tile, no_randomize, tile_warp, water_level, auto_water, dem_path, models_dir):
+def ground(ctx, ground_dir, texture_root, mode, hsv_jitter, biome, seed, resolution,
+           base_material, uniform_tile, no_randomize, tile_warp, water_level,
+           auto_water, dem_path, models_dir):
     """Generate the terrain ground PBR material (uniform or patchy/seeded).
 
     Operates on an already-generated terrain (run `wildseed terrain` first).
@@ -72,6 +77,8 @@ def ground(ctx, ground_dir, texture_root, mode, biome, seed, resolution, base_ma
         gc.tile_warp = tile_warp
     if water_level is not None:
         gc.water_level = water_level
+    if hsv_jitter is not None:
+        gc.hsv_jitter = hsv_jitter
 
     gdir = Path(ground_dir)
     if not (gdir / "mesh" / "terrain.obj").exists():
@@ -79,7 +86,7 @@ def ground(ctx, ground_dir, texture_root, mode, biome, seed, resolution, base_ma
             f"{gdir}/mesh/terrain.obj not found. Run `wildseed terrain --dem ...` first."
         )
     troot = Path(gc.texture_root) if gc.texture_root else Path(texture_root)
-    if not troot.exists():
+    if not troot.exists() and gc.mode != "wild":  # wild is fully procedural
         raise click.ClickException(f"Texture root not found: {troot}")
 
     from wildseed.core.ground import GroundCompositor, write_water_model, write_basin_water_models
