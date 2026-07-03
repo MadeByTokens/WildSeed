@@ -264,3 +264,39 @@ coverage is biome-inherent.
 - **Under-population (coverage 0.56 vs 0.99)** — OPEN, the Phase C headline.
 - **DEM-mesh faceting** in the top-down autocorr cross — accepted (geometry, nadir-only;
   oblique robot cameras unaffected). Not chased further.
+
+## Variety harvest + master-seed scenarios (2026-07-03) — post-DEMO_REALISM_V2
+
+The 6 demos were rebuilt end-to-end after (a) the **15-species variety harvest**
+(every biome ≥3 trees + ≥2 understory; `tools/ASSET_REGISTRY.md`) and (b) the
+placement RNG hardening (instance `np.random.Generator` + sorted listings — the
+seed→world mapping changed once here, by design). Same harness (`tools/compare.py`):
+
+| scene            | cov (was → now) | FAST/MP (was → now) | tilePk (was → now) |
+|------------------|-----------------|---------------------|--------------------|
+| temperate_hills  | 0.77 → **0.95** | 17253 → 19377       | 0.115 → 0.099      |
+| savanna_flats    | 0.80 → **0.88** | 11127 → 12030       | 0.311 → **0.491**  |
+| lakeland_wetland | 0.84 → **0.92** | 17378 → 19017       | 0.144 → 0.068      |
+| alpine_snow      | 0.50 → **0.92** | 10825 → 11574       | 0.056 → 0.098      |
+| winter_forest    | 0.92 → **0.98** | 16589 → 17873       | 0.085 → 0.055      |
+| coastal_dune     | 0.69 → 0.64     | 7983 → 7841         | 0.310 → 0.191      |
+| **comparable mean** | **0.77 → 0.85** (orig 0.99) | **13435 → 14566 = 64 %** (orig 22874, was 59 %) | 0.220 → 0.212 (orig 0.084) |
+
+- **Coverage gate (no regression below 0.77): PASS at 0.85.** Biggest movers are the
+  biomes that got real understory/species depth: alpine 0.50→0.92 (saplings + debris
+  fill the bare snow slope — the previous "biome-inherent" ceiling was actually an
+  asset-variety ceiling), temperate 0.77→0.95.
+- **FAST/MP improves 59 %→64 %** of the originals — the CC0 ceiling moves with variety,
+  as predicted by the V2 report.
+- **Honest flags:** `coastal_dune` coverage dipped 0.69→0.64 (new placement draw put
+  fewer trees near the hero cam: 6 within 55 m); `savanna_flats` hero-cam tilePk rose
+  0.311→0.491 at a 62 px period (grazing-angle bare-sand ripple with the new framing;
+  its top-down tilePk is 0.249, i.e. the fine ~4–7 m asset tile stays broken — Phase B's
+  structural fix is untouched). Both are placement-draw sensitivity, not asset or
+  pipeline regressions; both scenes remain above / near their pre-harvest FAST density.
+
+Reproducibility spot-checks in the same container session: `forest3d scenario
+--seed 42` twice → byte-identical world + spec (625/625 models, 2 water basins);
+re-verified after the RNG hardening with `--seed 107` (DETERMINISM_HOLDS). The 3-seed
+diversity proof is `tools/scenario_seeds_gallery.png` (seeds 101/107/108 →
+wetland/temperate/alpine).

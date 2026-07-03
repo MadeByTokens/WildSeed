@@ -31,6 +31,7 @@ docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all -e PYTHONPATH=/work
 | `compare.py` | Image-level metric harness: ORB/FAST per-MP, 8×8 coverage, tiling autocorrelation, vs the 3 reference screenshots. Emits `compare.png` + a markdown table. Needs `opencv-python-headless` (in `:egl`). |
 | `quickmetric.py` | Fast single-scene readout (`python3 tools/quickmetric.py savanna_flats`). |
 | `regen_galleries.py` | Rebuilds the 6-panel `scenarios_gallery.png` / `scenarios_overview.png` from frames on disk — use after a single-scene `FOREST_SCN=` build. |
+| `scenario_gallery.py` | Builds + renders N `forest3d scenario --seed` worlds (default 101/107/108) → `scenario_seeds_gallery.png`, the master-seed diversity proof. |
 
 ## Catalog & diagnostics
 

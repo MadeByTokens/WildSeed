@@ -20,6 +20,30 @@ python3 tools/build_scenarios.py    # writes tools/scenarios_gallery.png + _over
 and writes `assets/manifest.lock.yaml` with each source's sha256. All assets are CC0
 (Poly Haven, https://polyhaven.com) — see `tools/ASSET_REGISTRY.md` for full credits.
 
+## One-command randomized worlds (`forest3d scenario`)
+
+For VIO/LIO test campaigns you usually want *many* varied worlds, not the six
+fixed demos. `forest3d scenario` generates a complete world from **one master
+seed**: it derives per-stage seeds (`SeedSequence.spawn`), draws the biome,
+terrain preset/knobs and densities from per-biome envelopes (the ranges the six
+demos were tuned in — see `BIOME_SPACE` in `src/forest3d/core/scenario.py`), runs
+`terraingen → terrain → ground → generate` (plus per-basin water when the biome
+calls for it), and constrains species to the biome's palette from
+`assets/manifest.yaml`.
+
+```bash
+forest3d scenario --seed 42                      # random biome + everything else
+forest3d scenario --seed 42 --biome alpine       # fix the biome, randomize the rest
+forest3d scenario --seed 7  --density-scale 0.5  # sparse variant of seed 7
+forest3d scenario --seed 7  --dry-run            # inspect the recipe, build nothing
+```
+
+Outputs: `worlds/scenario_<seed>.world` plus `worlds/scenario_<seed>.yaml` — the
+latter records every resolved parameter (stage seeds, knobs, densities, palette),
+so a failing VIO run can name the exact world it saw and anyone can regenerate it
+byte-identically from the seed. The mapping seed→world is stable within a
+`scenario_format` version (bumped if the envelopes or draw order ever change).
+
 ## Adjusting density (trees, rocks, bushes, grass)
 
 Density is the main knob and is fully user-tunable. Each scenario sets per-category

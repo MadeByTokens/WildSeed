@@ -66,7 +66,22 @@ forest3d launch
 
 Beyond meshing a fixed DEM, Forest3D can **synthesize** varied, seeded landforms —
 rolling hills, mountains, valleys, flatlands, basins→lakes, creeks — and randomize
-whole scenarios reproducibly (same `--seed` → same world) for VIO/lidar testing:
+whole scenarios reproducibly (same `--seed` → same world) for VIO/lidar testing.
+
+**One command, one master seed** — `forest3d scenario` chains every stage
+(landform → mesh → ground material → water → model placement), deriving each
+stage's seed from the master seed and drawing the biome, terrain shape and
+densities from per-biome envelopes. The full resolved recipe is written to
+`worlds/scenario_<seed>.yaml`, so any world reproduces from its seed alone:
+
+```bash
+forest3d scenario --seed 42                      # fully random, byte-reproducible
+forest3d scenario --seed 42 --biome alpine       # fix the biome, randomize the rest
+forest3d scenario --seed 7  --density-scale 1.5  # denser variant of seed 7
+forest3d scenario --seed 7  --dry-run            # print the resolved recipe only
+```
+
+The individual stages remain available for manual control:
 
 ```bash
 forest3d terraingen --preset lakeland --seed 7 -o dem/synth.tif   # synth landform
