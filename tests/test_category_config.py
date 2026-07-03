@@ -53,3 +53,26 @@ def test_invalid_strategy_rejected():
     import pytest
     with pytest.raises(ValueError):
         CategoryConfig(collision_strategy="banana")
+
+
+def test_passable_and_laser_retro_defaults():
+    """CropCraft-inspired semantics: understory passable, per-category retro."""
+    cfg = BlenderConfig()
+    assert cfg.resolve_category("grass").passable is True
+    assert cfg.resolve_category("bush").passable is True
+    assert cfg.resolve_category("tree").passable is False
+    assert cfg.resolve_category("rock").passable is False
+    retros = {c: cfg.resolve_category(c).laser_retro
+              for c in ("tree", "bush", "rock", "grass", "sand")}
+    assert retros == {"tree": 1.0, "bush": 2.0, "rock": 3.0, "grass": 4.0, "sand": 5.0}
+    # distinct labels — lidar intensity must separate the classes
+    assert len(set(retros.values())) == 5
+
+
+def test_passable_and_laser_retro_overridable():
+    cfg = BlenderConfig(categories={
+        "grass": CategoryConfig(passable=False, laser_retro=9.5),
+    })
+    r = cfg.resolve_category("grass")
+    assert r.passable is False
+    assert r.laser_retro == 9.5

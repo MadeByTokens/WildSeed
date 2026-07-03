@@ -109,7 +109,7 @@ class AssetExporter:
         if progress_callback:
             progress_callback(80, "Creating model files...")
 
-        self._create_sdf_file(base_name, asset_dir)
+        self._create_sdf_file(base_name, asset_dir, resolved)
         self._create_config_file(base_name, asset_dir)
         self._create_test_world(base_name, asset_dir, category)
 
@@ -328,17 +328,37 @@ export_collision("{collision_path}", "{collision_strategy}", {collision_dec})
         finally:
             os.unlink(script_path)
 
-    def _create_sdf_file(self, model_name: str, model_dir: Path) -> Path:
-        """Create SDF file using glTF meshes."""
+    def _create_sdf_file(self, model_name: str, model_dir: Path,
+                         resolved=None) -> Path:
+        """Create SDF file using glTF meshes.
+
+        CropCraft-inspired semantics (Apache-2.0, INRAE): the collision carries
+        a per-category ``laser_retro`` so simulated lidar intensity doubles as
+        a semantic class label, and passable categories (grass/bush by default)
+        get ``collide_without_contact`` + a zero ``collide_bitmask`` so robots
+        drive through them while lidar still returns hits.
+        """
+        retro = getattr(resolved, "laser_retro", 0.0) or 0.0
+        passable = bool(getattr(resolved, "passable", False))
+        surface = ""
+        if passable:
+            surface = '''
+                <surface>
+                    <contact>
+                        <collide_without_contact>true</collide_without_contact>
+                        <collide_bitmask>0x00</collide_bitmask>
+                    </contact>
+                </surface>'''
         sdf_content = f'''<?xml version="1.0" ?>
 <sdf version="1.8">
     <model name="{model_name}">
         <static>true</static>
         <link name="link">
             <collision name="collision">
+                <laser_retro>{retro:g}</laser_retro>
                 <geometry>
                     <mesh><uri>mesh/{model_name}_collision.glb</uri></mesh>
-                </geometry>
+                </geometry>{surface}
             </collision>
             <visual name="visual">
                 <geometry>

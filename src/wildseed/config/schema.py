@@ -38,6 +38,19 @@ class CategoryConfig(BaseModel):
         default=False,
         description="Skip the Decimate modifier on objects that have any alpha (foliage) material slot."
     )
+    passable: Optional[bool] = Field(
+        default=None,
+        description="Robots drive through this category (collide_without_contact + "
+                    "zero collide_bitmask) while lidar still hits it. None -> "
+                    "category default (grass/bush passable, everything else solid)."
+    )
+    laser_retro: Optional[float] = Field(
+        default=None,
+        description="laser_retro written on the collision so simulated lidar "
+                    "intensity identifies the category (CropCraft-style semantic "
+                    "labels). None -> category default (tree=1 bush=2 rock=3 "
+                    "grass=4 sand=5; ground stays 0)."
+    )
 
     @field_validator("collision_strategy")
     @classmethod
@@ -84,6 +97,10 @@ class BlenderConfig(BaseModel):
             ),
             collision_strategy=cc.collision_strategy,
             skip_foliage_decimation=cc.skip_foliage_decimation,
+            passable=(cc.passable if cc.passable is not None
+                      else PASSABLE_DEFAULTS.get(category, False)),
+            laser_retro=(cc.laser_retro if cc.laser_retro is not None
+                         else LASER_RETRO_DEFAULTS.get(category, 0.0)),
         )
 
     @field_validator("path", mode="before")
@@ -94,6 +111,14 @@ class BlenderConfig(BaseModel):
         return Path(v).expanduser().resolve()
 
 
+# Per-category defaults for the CropCraft-inspired SDF semantics: understory is
+# passable (robots drive through it, lidar still returns), and each category
+# carries a distinct laser_retro so lidar intensity doubles as a class label.
+PASSABLE_DEFAULTS = {"grass": True, "bush": True}
+LASER_RETRO_DEFAULTS = {"tree": 1.0, "bush": 2.0, "rock": 3.0, "grass": 4.0,
+                        "sand": 5.0}
+
+
 class ResolvedCategory(BaseModel):
     """Effective per-asset conversion parameters (no None fallbacks left)."""
 
@@ -101,6 +126,8 @@ class ResolvedCategory(BaseModel):
     collision_decimation: float
     collision_strategy: str
     skip_foliage_decimation: bool
+    passable: bool = False
+    laser_retro: float = 0.0
 
 
 class GroundLayerSpec(BaseModel):
