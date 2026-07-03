@@ -359,9 +359,11 @@ def fly_dynamic(traj: Dict, world: str = "forest_world",
     """
     import time
 
+    from gz.msgs10.boolean_pb2 import Boolean
     from gz.msgs10.entity_pb2 import Entity
     from gz.msgs10.entity_wrench_pb2 import EntityWrench
     from gz.msgs10.odometry_pb2 import Odometry
+    from gz.msgs10.pose_pb2 import Pose
     from gz.msgs10.world_stats_pb2 import WorldStatistics
     from gz.transport13 import Node
 
@@ -391,6 +393,7 @@ def fly_dynamic(traj: Dict, world: str = "forest_world",
     node.subscribe(WorldStatistics, f"/world/{world}/stats", stats_cb)
     node.subscribe(Odometry, f"/model/{model}/odometry", odom_cb)
     pub = node.advertise(f"/world/{world}/wrench/persistent", EntityWrench)
+    pub_clear = node.advertise(f"/world/{world}/wrench/clear", Entity)
 
     deadline = time.time() + 30
     while sim["t"] is None or fb["p"] is None:
@@ -398,25 +401,75 @@ def fly_dynamic(traj: Dict, world: str = "forest_world",
             raise RuntimeError("no sim stats/odometry within 30 s "
                                "(rig world running? OdometryPublisher on?)")
         time.sleep(0.05)
-    time.sleep(settle_s)
 
-    f_applied = np.zeros(3)
-    tau_applied = np.zeros(3)
+    # One kinematic pre-position to the trajectory start: without it the PD
+    # spends the first minute saturated (5 g) chasing a start point ~100 m
+    # from the spawn — measured as flat |acc| = 49 in the IMU gate.
+    start = traj["samples"][0]
+    req = Pose()
+    req.name = model
+    req.position.x, req.position.y, req.position.z = (start["x"], start["y"],
+                                                      start["z"])
+    req.orientation.w = start["qw"]
+    req.orientation.x = start["qx"]
+    req.orientation.y = start["qy"]
+    req.orientation.z = start["qz"]
+    node.request(f"/world/{world}/set_pose", req, Pose, Boolean, 1000)
+    time.sleep(settle_s)   # hover at the start; also the IMU gate's window
+
     f_max = 5.0 * mass * 9.81
     tau_max = 40.0 * inertia
 
-    def send(force, torque):
-        nonlocal f_applied, tau_applied
+    # ApplyLinkWrench semantics, all MEASURED (see SENSOR_RIG_PLAN findings):
+    # - persistent wrenches ACCUMULATE as a list; the summed force is applied
+    #   exactly, but the server iterates the list every step — 4000 entries
+    #   dragged RTF 1.0 -> 0.32, and naive 50 Hz deltas froze whole flights.
+    # - clear+set per cycle does NOT work: clear and set travel on different
+    #   topics (different publishers, no cross-topic ordering) and the race
+    #   measures at 0% effective duty — no force at all.
+    # Therefore: publish DELTAS on the single ordered persistent topic (sum
+    # stays exact), deadbanded so the list grows only when the command really
+    # changes; if a long flight ever accumulates too many entries, consolidate
+    # with clear -> wall-clock gap -> full-value re-base (the gap makes the
+    # cross-topic ordering safe; the PD absorbs the ~60 ms force dropout).
+    f_applied = np.zeros(3)
+    tau_applied = np.zeros(3)
+    published = 0
+    f_deadband = 0.02 * f_max
+    tau_deadband = 0.02 * tau_max
+    CONSOLIDATE_AT = 400
+
+    def send(force, torque, must_publish=False):
+        nonlocal f_applied, tau_applied, published
+        d_f = force - f_applied
+        d_t = torque - tau_applied
+        if not must_publish and np.linalg.norm(d_f) < f_deadband \
+                and np.linalg.norm(d_t) < tau_deadband:
+            return
         msg = EntityWrench()
         msg.entity.name = model
         msg.entity.type = Entity.MODEL
-        d_f = force - f_applied
-        d_t = torque - tau_applied
         msg.wrench.force.x, msg.wrench.force.y, msg.wrench.force.z = d_f
         msg.wrench.torque.x, msg.wrench.torque.y, msg.wrench.torque.z = d_t
         pub.publish(msg)
         f_applied = force
         tau_applied = torque
+        published += 1
+        if published >= CONSOLIDATE_AT:
+            clear = Entity()
+            clear.name = model
+            clear.type = Entity.MODEL
+            pub_clear.publish(clear)
+            time.sleep(0.06)   # let the clear land alone (cross-topic race)
+            base = EntityWrench()
+            base.entity.name = model
+            base.entity.type = Entity.MODEL
+            base.wrench.force.x, base.wrench.force.y, base.wrench.force.z = \
+                f_applied
+            base.wrench.torque.x, base.wrench.torque.y, base.wrench.torque.z = \
+                tau_applied
+            pub.publish(base)
+            published = 1
 
     t0 = sim_now()
     end_t = traj["samples"][-1]["t"]
@@ -463,7 +516,11 @@ def fly_dynamic(traj: Dict, world: str = "forest_world",
                 break
             time.sleep(1.0 / update_hz)
     finally:
-        send(np.zeros(3), np.zeros(3))   # leave zero net persistent wrench
+        # drop the whole persistent list: zero force AND zero server cost
+        clear = Entity()
+        clear.name = model
+        clear.type = Entity.MODEL
+        pub_clear.publish(clear)
 
     err = np.array(err_log)
     settled = err[len(err) // 10:]   # after initial convergence

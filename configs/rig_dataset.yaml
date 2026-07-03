@@ -1,0 +1,20 @@
+# Dataset sensor-rig config (docs/SENSOR_RIG_PLAN.md): the streams
+# `wildseed record --dataset` dumps (camera, 3D lidar, IMU, GPS, ground-truth
+# odometry) and nothing else — the full default suite renders 5 cameras and
+# drags RTF down hard. Use for dynamic-mode dataset runs:
+#   wildseed generate --rig --rig-config configs/rig_dataset.yaml
+#   wildseed record -p dolly --seed 3 --mode dynamic --dataset
+camera:
+  width: 640
+  height: 480
+  fov: 1.0
+  rate: 10.0
+  far: 2000.0
+stereo_baseline: 0.0
+rgbd: false
+wideangle: false
+segmentation: false
+lidar:
+  enabled: true
+  channels: 16
+  samples: 360

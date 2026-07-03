@@ -47,15 +47,34 @@ if len(imu) < 100 or len(odom) < 100:
     sys.exit(1)
 
 acc = np.linalg.norm(imu[:, 1:4], axis=1)
-# hover window: first second of IMU data (verifier starts before the flight)
-t_rel = imu[:, 0] - imu[0, 0]
-hover = acc[t_rel < 1.0]
-flight = acc[t_rel >= 3.0]
-path = np.linalg.norm(np.diff(odom[:, 1:4], axis=0), axis=1).sum()
+# Anchor the windows to odometry, not wall timing. The dynamic mode
+# legitimately teleports ONCE (a single >5 m odom step) to the trajectory
+# start, then hovers for settle_s before flying — so "motion start" must mean
+# SUSTAINED speed, and "hover" is the quiet stretch right before it.
+step = np.linalg.norm(np.diff(odom[:, 1:4], axis=0), axis=1)
+dt = np.maximum(np.diff(odom[:, 0]), 1e-6)
+speed = step / dt
+t_mid = odom[1:, 0]
+sustained = np.convolve((speed > 0.5).astype(float), np.ones(25) / 25,
+                        mode="same") > 0.9   # ~0.5 s of continuous motion
+if not sustained.any():
+    print("VERDICT FAIL: rig never sustained > 0.5 m/s")
+    sys.exit(1)
+t_motion = t_mid[sustained][0]
+quiet = (t_mid < t_motion - 0.3) & (speed < 0.05) & (step < 1.0)
+if quiet.sum() < 10:
+    print("VERDICT FAIL: no hover stretch before motion")
+    sys.exit(1)
+t_h0, t_h1 = t_mid[quiet][max(0, quiet.sum() - 100)], t_mid[quiet][-1]
+hover = acc[(imu[:, 0] > t_h0) & (imu[:, 0] < t_h1)]
+flight = acc[imu[:, 0] >= t_motion + 1.0]
+path = step[t_mid >= t_motion].sum()
 
 hover_ok = len(hover) > 10 and abs(hover.mean() - 9.81) < 0.3 and hover.std() < 0.3
+# p99 tolerates the brief catch-up transient right after motion starts;
+# kinematic set_pose flight produces orders-of-magnitude larger spikes
 spike_ok = len(flight) > 100 and flight.max() < 25.0 and \
-    np.percentile(flight, 99) < 16.0
+    np.percentile(flight, 99) < 20.0
 motion_ok = path > 20.0
 
 print(f"hover  : |acc| mean={hover.mean():.2f} std={hover.std():.3f} "

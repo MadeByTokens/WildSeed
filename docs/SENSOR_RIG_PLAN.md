@@ -381,3 +381,36 @@ against a running gz world, `parameter_bridge` lists the topic in
 Findings: the base images run as user `wildseed` — overlay needs `USER root`
 for apt (then drops back). Jammy base ⇒ Humble; the Harmonic bridge package
 is `ros-humble-ros-gzharmonic` (plain `ros-gz` targets Fortress).
+
+### Phase 4 — GATE MET: dynamic hand-of-god flight with honest IMU
+
+`wildseed fly/record --mode dynamic` (fly_dynamic in core/fly.py): kinematic
+pre-position to the trajectory start, then a PD wrench loop (kp=4, kd=4,
+attitude PD toward the trajectory quaternion) via ApplyLinkWrench.
+
+Gate (tools/verify_dynamic.py + manifest, dolly seed 3 @ 4 m/s, dataset on):
+**tracking err mean 0.029 m / p95 0.065 m / max 0.116 m**; IMU hover 9.80 ±
+0.000 (specific force at rest — correct with gravity-off link since gz still
+subtracts world gravity); flight p50 9.80 / p99 9.96 / max 16.9 (initial
+catch-up transient, physically real); 181 m path; full dataset + video.
+
+**Hard-won findings — ApplyLinkWrench protocol (all measured):**
+1. Persistent wrenches ACCUMULATE as a list; the summed force is exact but the
+   server iterates the list per step: 4000 entries drag RTF 1.0 → 0.32, and
+   naive 50 Hz delta publishing froze whole flights (~4 lidar scans in
+   15 min).
+2. clear+set per cycle is 0% effective duty: clear and set are DIFFERENT
+   topics (different publishers — no cross-topic ordering), and the race
+   reliably wipes the fresh wrench. A flight "worked" this way — moving on
+   stray impulses with flat-9.8 IMU and 3.3 m mean tracking error.
+3. The working protocol: deadbanded DELTAS on the single ordered persistent
+   topic (2 % of clamp deadband keeps the list tiny), rare consolidation
+   (clear → 60 ms wall gap → full-value re-base), and a final clear so the
+   world is left with zero entries.
+4. Debugging method note: hypotheses 1–2 were separated only by analyzing the
+   recorded dataset (groundtruth.txt showed purely along-track error with
+   commanded-force/IMU contradiction) and two CPU-only probe experiments
+   (duty factor, list cost) — not by re-running the gate blind. Datasets
+   from failed runs are evidence; use them first.
+5. gz OdometryPublisher twist is CHILD-frame (probe-verified) — rotate to
+   world before using as PD velocity feedback.

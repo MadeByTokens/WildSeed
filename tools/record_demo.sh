@@ -23,7 +23,12 @@ fi
 WORLD_NAME=$(sed -n 's/.*<world name=["'\'']\([^"'\'']*\)["'\''].*/\1/p' "$WORLD_FILE" | head -1)
 echo "recording: pattern=$PATTERN seed=$SEED world=$WORLD_NAME ($WORLD_FILE)"
 
-docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
+# Named container + kill-on-exit: if this script dies (Ctrl-C, timeout), the
+# container must die with it — an orphaned gz server silently fights the next
+# run for the GPU and wrecks its RTF.
+CONTAINER="wildseed-record-$$"
+trap 'docker kill "$CONTAINER" >/dev/null 2>&1 || true' EXIT
+docker run --rm --name "$CONTAINER" --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
     -v "$PWD:/workspace" --entrypoint bash wildseed:egl -c "
     cd /workspace
     GZ_SIM_RESOURCE_PATH=/workspace/models gz sim -s -r '$WORLD_FILE' > /tmp/gz.log 2>&1 &

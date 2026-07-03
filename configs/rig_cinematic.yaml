@@ -1,0 +1,19 @@
+# Cinematic sensor-rig config (docs/SENSOR_RIG_PLAN.md): one HD-ish camera,
+# everything else off. The full default suite costs render time (5 cameras +
+# lidar) and drops the capture rate; for demo VIDEOS all we need is the main
+# camera at a decent rate — the sim keeps RTF near 1 and the footage stays
+# fluid. Use with:
+#   wildseed generate --rig --rig-config configs/rig_cinematic.yaml
+#   wildseed rig --inject worlds/<w>.world --config configs/rig_cinematic.yaml
+camera:
+  width: 1280
+  height: 720
+  fov: 1.1
+  rate: 20.0
+  far: 3000.0
+stereo_baseline: 0.0   # single camera
+rgbd: false
+wideangle: false
+segmentation: false
+lidar:
+  enabled: false

@@ -351,3 +351,52 @@ def add_rig_include(world: ET.Element, config: RigConfig,
     ET.SubElement(include, "uri").text = f"model://{config.name}"
     ET.SubElement(include, "name").text = config.name
     ET.SubElement(include, "pose").text = " ".join(f"{v:.4f}" for v in pose)
+
+
+def inject_rig_into_world(world_path: Path, config: RigConfig,
+                          models_path: Path,
+                          rig_pose: Optional[Tuple[float, ...]] = None) -> Path:
+    """Retrofit an EXISTING world file with the rig + everything it needs.
+
+    Idempotent: adds the sensor system plugins, spherical coordinates,
+    per-include class labels (category from the ``model://<cat>/...`` uri)
+    and the rig include only where missing. The rig model itself is
+    (re)generated under ``models_path``. Default pose: above the first
+    include's position or the origin, 25 m up — pass ``rig_pose`` for
+    anything camera-worthy.
+    """
+    world_path = Path(world_path)
+    tree = ET.parse(world_path)
+    root = tree.getroot()
+    world = root.find("world")
+    if world is None:
+        raise ValueError(f"no <world> element in {world_path}")
+
+    add_world_sensor_requirements(world)
+    write_rig_model(config, models_path)
+
+    for inc in world.findall("include"):
+        name = inc.findtext("name") or ""
+        if name == config.name:
+            break   # rig already present; labels below stay idempotent too
+    else:
+        if rig_pose is None:
+            rig_pose = (0.0, 0.0, 40.0, 0.0, 0.0, 0.0)
+        add_rig_include(world, config, tuple(rig_pose))
+
+    for inc in world.findall("include"):
+        uri = inc.findtext("uri") or ""
+        if not uri.startswith("model://") or uri == f"model://{config.name}":
+            continue
+        has_label = any(p.get("name") == "gz::sim::systems::Label"
+                        for p in inc.findall("plugin"))
+        if not has_label:
+            category = uri[len("model://"):].split("/")[0]
+            add_label_plugin(inc, category)
+
+    try:
+        ET.indent(tree, space="    ")
+    except AttributeError:
+        pass
+    tree.write(str(world_path), encoding="utf-8", xml_declaration=True)
+    return world_path

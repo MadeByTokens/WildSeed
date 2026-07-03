@@ -98,3 +98,37 @@ def test_add_rig_include_pose_format():
     inc = world.find("include")
     assert inc.find("uri").text == "model://sensor_rig"
     assert inc.find("pose").text.split()[:3] == ["1.0000", "2.0000", "3.0000"]
+
+
+def test_inject_rig_into_world_idempotent(tmp_path):
+    from wildseed.core.rig import inject_rig_into_world
+
+    world_file = tmp_path / "w.world"
+    world_file.write_text("""<?xml version="1.0"?>
+<sdf version="1.8"><world name="w">
+  <include><uri>model://ground</uri><name>terrain</name></include>
+  <include><uri>model://tree/fir</uri><name>tree_0</name></include>
+</world></sdf>""")
+
+    inject_rig_into_world(world_file, RigConfig(), tmp_path / "models",
+                          rig_pose=(5, 6, 30, 0, 0, 0))
+    inject_rig_into_world(world_file, RigConfig(), tmp_path / "models")  # again
+
+    root = ET.parse(world_file).getroot()
+    world = root.find("world")
+    rig_incs = [i for i in world.findall("include")
+                if (i.findtext("name") or "") == "sensor_rig"]
+    assert len(rig_incs) == 1
+    assert rig_incs[0].findtext("pose").split()[0] == "5.0000"
+    plugins = [p.get("name") for p in world.findall("plugin")]
+    assert plugins.count("gz::sim::systems::Sensors") == 1
+    assert len(world.findall("spherical_coordinates")) == 1
+    # labels: terrain -> ground(6), tree -> 1; exactly one Label plugin each
+    for inc_name, label in (("terrain", "6"), ("tree_0", "1")):
+        inc = next(i for i in world.findall("include")
+                   if i.findtext("name") == inc_name)
+        lbls = [p for p in inc.findall("plugin")
+                if p.get("name") == "gz::sim::systems::Label"]
+        assert len(lbls) == 1 and lbls[0].findtext("label") == label
+    # generated rig model exists
+    assert (tmp_path / "models" / "sensor_rig" / "model.sdf").exists()
