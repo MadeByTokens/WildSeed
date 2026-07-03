@@ -1,0 +1,10 @@
+.git
+*.bundle
+models/
+Blender-Assets/
+frames/
+worlds/
+dem/scenario_*
+dem/synth*
+**/__pycache__
+*.npy
