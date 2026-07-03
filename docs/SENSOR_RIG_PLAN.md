@@ -345,3 +345,26 @@ follows velocity, interpolation, kinematic-mode flag).
 4. Kinematic playback is recorded as `"mode": "kinematic"` in the trajectory
    JSON — IMU during set_pose flight is garbage by construction and datasets
    must be able to tell.
+
+### Phase 3 — GATE MET: one command → demo video (sim-time-correct)
+
+`wildseed record` (core/record.py): subscribes the rig streams while flying
+the trajectory, buffers PNG frames, encodes `video.mp4` with cv2 (the images
+ship no ffmpeg binary) at the fps MEASURED from sensor sim-time stamps, and
+writes `manifest.json` + the exact `trajectory.json`. `--dataset` adds lidar
+npz, imu/navsat csv, TUM `groundtruth.txt`. `tools/record_demo.sh` is the
+one-command wrapper (server + record in one container). Gate: 56.3 s orbit →
+584 frames at exactly 10.0 fps (the camera's nominal rate — zero drops),
+58 s video matching sim time 1:1; unit tests 119/119.
+
+**Hard-won findings:**
+1. **Never do real work on gz-transport callback threads.** PNG encoding
+   (~10 ms) in the camera callback starved the thread pool that also serves
+   service responses: set_pose round-trips ballooned to ~1 s and a fixed
+   per-iteration advance bound stretched a 75 s flight into 570 s of slow
+   motion. Callbacks now only enqueue bytes (a writer thread encodes), and
+   the advance bound is relative to sim progress (2x catch-up), so a slow
+   loop skips ahead instead of dilating the flight. Verified: 2418 updates,
+   1.5% rejected, flight duration == trajectory duration.
+2. Encode at the measured fps, not the nominal sensor rate — then the video
+   duration always equals sim duration even if the render drops frames.

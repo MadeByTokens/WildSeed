@@ -4,8 +4,8 @@ from pathlib import Path
 
 import click
 
-from wildseed.core.fly import (PATTERNS, TerrainSampler, play_trajectory,
-                               synthesize, write_trajectory)
+from wildseed.core.fly import (PATTERNS, TerrainSampler, fly_dynamic,
+                               play_trajectory, synthesize, write_trajectory)
 
 
 @click.command()
@@ -31,13 +31,18 @@ from wildseed.core.fly import (PATTERNS, TerrainSampler, play_trajectory,
 @click.option("--play", is_flag=True,
               help="Also fly it: drive the rig via /world/<world>/set_pose, "
                    "paced by sim time (needs a running gz server + gz python).")
+@click.option("--mode", type=click.Choice(["kinematic", "dynamic"]),
+              default="kinematic",
+              help="Playback mode for --play: kinematic set_pose (camera "
+                   "work; IMU invalid) or dynamic PD-wrench hand-of-god "
+                   "(physics-consistent IMU). Default: kinematic")
 @click.option("--world", default="forest_world",
               help="World name for --play. Default: forest_world")
 @click.option("--model", default="sensor_rig",
               help="Model to move for --play. Default: sensor_rig")
 @click.pass_context
 def fly(ctx, pattern, seed, speed, agl, rate, margin, center, radius,
-        base_path, out, play, world, model):
+        base_path, out, play, mode, world, model):
     """Synthesize (and optionally fly) a seeded rig trajectory.
 
     The trajectory is written to disk BEFORE any playback: the seed defines
@@ -72,6 +77,7 @@ def fly(ctx, pattern, seed, speed, agl, rate, margin, center, radius,
     terrain = TerrainSampler(stl)
     traj = synthesize(pattern, seed, terrain, speed=speed, agl=agl, rate=rate,
                       margin=margin, center=center_xy, radius=radius)
+    traj["mode"] = mode   # record how this trajectory is meant to be flown
 
     out_path = Path(out) if out else (
         base / "worlds" / f"trajectory_{pattern}_{seed}.json")
@@ -81,11 +87,21 @@ def fly(ctx, pattern, seed, speed, agl, rate, margin, center, radius,
 
     if play:
         try:
-            calls = play_trajectory(traj, world=world, model=model)
+            if mode == "dynamic":
+                summary = fly_dynamic(traj, world=world, model=model)
+                console.print(
+                    f"[green]dynamic flight complete[/green] "
+                    f"({summary['cycles']} cycles, tracking err "
+                    f"mean {summary['err_mean_m']} m / "
+                    f"p95 {summary['err_p95_m']} m / "
+                    f"max {summary['err_max_m']} m)")
+            else:
+                calls = play_trajectory(traj, world=world, model=model)
+                console.print(f"[green]flight complete[/green] "
+                              f"({calls} pose updates)")
         except ImportError as e:
             raise click.ClickException(
                 f"gz python bindings unavailable ({e}); run --play inside the "
                 "wildseed/wildseed:egl containers next to a running server.")
         except RuntimeError as e:
             raise click.ClickException(str(e))
-        console.print(f"[green]flight complete[/green] ({calls} pose updates)")

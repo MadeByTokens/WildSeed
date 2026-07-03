@@ -50,6 +50,9 @@ Blender-Assets/**/*.blend
 # Spike raw render data (regenerable)
 frames/
 
+# Flight recordings (videos/datasets; reproducible from seed + world)
+runs/
+
 # Synthesized DEMs (reproducible from seed+preset; bundled DEMs stay tracked)
 dem/synth*
 dem/*.lakes.json

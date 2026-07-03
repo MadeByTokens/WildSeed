@@ -1,0 +1,39 @@
+# ROS 2 bridge overlay (docs/SENSOR_RIG_PLAN.md Phase 5) — OPTIONAL.
+# Adds ROS 2 Humble + ros_gz (Harmonic variant) on top of wildseed:egl so ROS
+# users can bridge the sensor-rig topics and record rosbags. The core images
+# stay ROS-free; nothing in WildSeed depends on this.
+#
+#   docker build -f docker/Dockerfile.ros -t wildseed:ros .
+#
+#   # terminal 1: world + rig (server)
+#   docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
+#     -v "$PWD:/workspace" --name wildseed-ros --entrypoint bash wildseed:ros -c \
+#     'cd /workspace && GZ_SIM_RESOURCE_PATH=/workspace/models \
+#      gz sim -s -r worlds/forest_world.world'
+#
+#   # terminal 2: bridge + rosbag (same container namespace)
+#   docker exec -it wildseed-ros bash -c \
+#     'source /opt/ros/humble/setup.bash && \
+#      ros2 run ros_gz_bridge parameter_bridge \
+#        --ros-args -p config_file:=/workspace/docker/ros_gz_bridge.yaml & \
+#      sleep 5 && ros2 bag record -o /workspace/runs/rosbag \
+#        /rig/cam_left /rig/imu /rig/navsat /rig/lidar/points'
+#
+# Ubuntu 22.04 (jammy) base -> ROS 2 Humble; the Harmonic bridge is the
+# ros-humble-ros-gzharmonic package (NOT plain ros-gz, which targets Fortress).
+FROM wildseed:egl
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl gnupg lsb-release \
+    && curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
+        > /etc/apt/sources.list.d/ros2.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        ros-humble-ros-base \
+        ros-humble-ros-gzharmonic \
+        ros-humble-rosbag2-storage-mcap \
+    && rm -rf /var/lib/apt/lists/*
+
+# `source /opt/ros/humble/setup.bash` before any ros2 command.

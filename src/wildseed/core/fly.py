@@ -290,12 +290,18 @@ def play_trajectory(traj: Dict, world: str = "forest_world",
                 f"{end_t:.1f}s sim, service={service}")
     # Rate-limit the commanded trajectory time: if the sim stalls (sensor
     # init, scene load) the wall-clock extrapolation overruns and would snap
-    # the pose metres ahead on the next tick. Monotonic + bounded advance
-    # turns any such glitch into a momentary slow-down instead of a jump.
+    # the pose metres ahead on the next tick. The bound is RELATIVE TO SIM
+    # PROGRESS since the last iteration (2x, so it can catch up after a
+    # glitch): a fixed per-iteration bound stretched a 75 s flight into 570 s
+    # of slow motion when set_pose latency grew under full-sensor render load.
     t_prev = 0.0
-    max_advance = 4.0 / update_hz
+    sim_prev = sim_now()
+    rejects = 0
     while True:
-        t = min(max(sim_now() - t0, t_prev), t_prev + max_advance)
+        s = sim_now()
+        max_advance = max(2.0 * (s - sim_prev), 0.5 / update_hz)
+        sim_prev = s
+        t = min(max(s - t0, t_prev), t_prev + max_advance)
         t_prev = t
         p = interpolate_pose(traj, t)
         req = Pose()
@@ -305,11 +311,174 @@ def play_trajectory(traj: Dict, world: str = "forest_world",
         req.orientation.x = p["qx"]
         req.orientation.y = p["qy"]
         req.orientation.z = p["qz"]
-        ok, rep = node.request(service, req, Pose, Boolean, 1000)
+        # short timeout: a busy server must skip an update, not serialize the
+        # loop into second-long waits
+        ok, rep = node.request(service, req, Pose, Boolean, 200)
         if not (ok and rep.data):
-            logger.warning(f"set_pose rejected at t={t:.2f}")
+            rejects += 1
         calls += 1
         if t >= end_t:
             break
         time.sleep(1.0 / update_hz)
+    if rejects:
+        logger.warning(f"{rejects}/{calls} set_pose updates were "
+                       "rejected/timed out (server under load)")
     return calls
+
+
+def _quat_mul(a, b):
+    aw, ax, ay, az = a
+    bw, bx, by, bz = b
+    return (aw * bw - ax * bx - ay * by - az * bz,
+            aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw)
+
+
+def fly_dynamic(traj: Dict, world: str = "forest_world",
+                model: str = "sensor_rig", mass: float = 2.0,
+                inertia: float = 0.02,
+                kp: float = 4.0, kd: float = 4.0,
+                kp_att: float = 30.0, kd_att: float = 10.0,
+                update_hz: float = 50.0, settle_s: float = 3.0) -> Dict:
+    """Fly the trajectory with FORCES, not teleports (SENSOR_RIG_PLAN Phase 4).
+
+    The hand-of-god concept from simple_quad_gazebo rebuilt on gz Harmonic's
+    ApplyLinkWrench: a PD loop on position/velocity plus an attitude PD toward
+    the trajectory orientation. Physics integrates the motion, so the IMU
+    stream is consistent with the cameras (unlike kinematic set_pose flight).
+
+    ApplyLinkWrench's persistent wrenches ACCUMULATE per publish (measured) —
+    so each cycle publishes only the DELTA from the previously commanded
+    wrench: one message, no clear/set race, and the accumulated sum equals
+    the command. The rig link has gravity off; the gz IMU still subtracts
+    world gravity, so a hover correctly reads +9.81 up, exactly like a real
+    accelerometer on a hovering drone.
+
+    Returns a summary dict with tracking-error stats.
+    """
+    import time
+
+    from gz.msgs10.entity_pb2 import Entity
+    from gz.msgs10.entity_wrench_pb2 import EntityWrench
+    from gz.msgs10.odometry_pb2 import Odometry
+    from gz.msgs10.world_stats_pb2 import WorldStatistics
+    from gz.transport13 import Node
+
+    node = Node()
+    sim = {"t": None, "wall": None, "rtf": 1.0}
+    fb = {"p": None, "v": None, "q": None, "w": None}
+
+    def stats_cb(msg):
+        sim["t"] = msg.sim_time.sec + msg.sim_time.nsec * 1e-9
+        sim["wall"] = time.time()
+        if msg.real_time_factor > 0:
+            sim["rtf"] = msg.real_time_factor
+
+    def sim_now():
+        return sim["t"] + (time.time() - sim["wall"]) * sim["rtf"]
+
+    def odom_cb(m):
+        p, q = m.pose.position, m.pose.orientation
+        v, w = m.twist.linear, m.twist.angular
+        fb["p"] = np.array([p.x, p.y, p.z])
+        # odometry twist is in the CHILD (body) frame; rotate to world
+        R = _quat_to_rot(np.array([q.w, q.x, q.y, q.z]))
+        fb["v"] = R @ np.array([v.x, v.y, v.z])
+        fb["q"] = np.array([q.w, q.x, q.y, q.z])
+        fb["w"] = R @ np.array([w.x, w.y, w.z])
+
+    node.subscribe(WorldStatistics, f"/world/{world}/stats", stats_cb)
+    node.subscribe(Odometry, f"/model/{model}/odometry", odom_cb)
+    pub = node.advertise(f"/world/{world}/wrench/persistent", EntityWrench)
+
+    deadline = time.time() + 30
+    while sim["t"] is None or fb["p"] is None:
+        if time.time() > deadline:
+            raise RuntimeError("no sim stats/odometry within 30 s "
+                               "(rig world running? OdometryPublisher on?)")
+        time.sleep(0.05)
+    time.sleep(settle_s)
+
+    f_applied = np.zeros(3)
+    tau_applied = np.zeros(3)
+    f_max = 5.0 * mass * 9.81
+    tau_max = 40.0 * inertia
+
+    def send(force, torque):
+        nonlocal f_applied, tau_applied
+        msg = EntityWrench()
+        msg.entity.name = model
+        msg.entity.type = Entity.MODEL
+        d_f = force - f_applied
+        d_t = torque - tau_applied
+        msg.wrench.force.x, msg.wrench.force.y, msg.wrench.force.z = d_f
+        msg.wrench.torque.x, msg.wrench.torque.y, msg.wrench.torque.z = d_t
+        pub.publish(msg)
+        f_applied = force
+        tau_applied = torque
+
+    t0 = sim_now()
+    end_t = traj["samples"][-1]["t"]
+    dt_ref = 1.0 / traj["rate"]
+    t_prev, sim_prev = 0.0, sim_now()
+    err_log = []
+    logger.info(f"dynamic flight: {traj['pattern']} seed={traj['seed']} "
+                f"kp={kp} kd={kd}")
+    try:
+        while True:
+            s = sim_now()
+            max_advance = max(2.0 * (s - sim_prev), 0.5 / update_hz)
+            sim_prev = s
+            t = min(max(s - t0, t_prev), t_prev + max_advance)
+            t_prev = t
+            ref = interpolate_pose(traj, t)
+            ref_ahead = interpolate_pose(traj, t + dt_ref)
+            p_ref = np.array([ref["x"], ref["y"], ref["z"]])
+            v_ref = (np.array([ref_ahead["x"], ref_ahead["y"],
+                               ref_ahead["z"]]) - p_ref) / dt_ref
+
+            e_p = p_ref - fb["p"]
+            e_v = v_ref - fb["v"]
+            force = mass * (kp * e_p + kd * e_v)
+            n = np.linalg.norm(force)
+            if n > f_max:
+                force *= f_max / n
+
+            # attitude PD: small-angle rotation error from q_err = q_ref * q^-1
+            q = fb["q"]
+            q_ref = np.array([ref["qw"], ref["qx"], ref["qy"], ref["qz"]])
+            q_err = np.array(_quat_mul(q_ref, (q[0], -q[1], -q[2], -q[3])))
+            if q_err[0] < 0:
+                q_err = -q_err
+            e_rot = 2.0 * q_err[1:4]
+            torque = inertia * (kp_att * e_rot - kd_att * fb["w"])
+            n = np.linalg.norm(torque)
+            if n > tau_max:
+                torque *= tau_max / n
+
+            send(force, torque)
+            err_log.append(np.linalg.norm(e_p))
+            if t >= end_t:
+                break
+            time.sleep(1.0 / update_hz)
+    finally:
+        send(np.zeros(3), np.zeros(3))   # leave zero net persistent wrench
+
+    err = np.array(err_log)
+    settled = err[len(err) // 10:]   # after initial convergence
+    return {
+        "mode": "dynamic", "cycles": len(err),
+        "err_mean_m": round(float(settled.mean()), 3),
+        "err_p95_m": round(float(np.percentile(settled, 95)), 3),
+        "err_max_m": round(float(settled.max()), 3),
+    }
+
+
+def _quat_to_rot(q):
+    w, x, y, z = q
+    return np.array([
+        [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+        [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+        [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)],
+    ])
