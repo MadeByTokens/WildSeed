@@ -447,18 +447,48 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 WildSeed began as a fork of
 **[Forest3D](https://github.com/unitsSpaceLab/Forest3D)** by Khalid Bourr
 (AI4Forest / unitsSpaceLab) — the original DEM-terrain → Blender-asset-convert →
-procedural-placement pipeline for Gazebo is his work, and the full commit history of
-that project is preserved in this repository. The three reference screenshots bundled
-for the metric harness (`Screenshot from 2026-01-*.png`) are renders from that
-project. Thank you, Khalid.
+procedural-placement pipeline for Gazebo is his work, and that project's commit
+history (authors, dates, messages) is preserved in this repository (asset binaries
+under the gitignored `models/` and `Blender-Assets/` paths were scrubbed from history
+because some were commercial and not redistributable). The three reference
+screenshots bundled for the metric harness (`Screenshot from 2026-01-*.png`) are
+renders from that project. Thank you, Khalid.
 
 On top of that foundation, WildSeed added the seeded procedural terrain synthesizer,
 the seeded patchy-ground compositor with per-basin water, the master-seed `scenario`
-orchestrator, the manifest-driven CC0 asset pipeline (all demo assets from
-[Poly Haven](https://polyhaven.com) and [ambientCG](https://ambientcg.com), CC0 —
-per-asset credits in [tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md)), the
-image-level realism metric harness, and the reproducibility guarantees (pinned Docker,
-sha256-locked assets, byte-identical worlds per seed). Documents under
-[docs/history/](docs/history/) and the realism reports predate the rename and refer to
-the project as Forest3D.
+orchestrator, the manifest-driven CC0 asset pipeline, the image-level realism metric
+harness, and the reproducibility guarantees (pinned Docker, sha256-locked assets,
+byte-identical worlds per seed). Documents under [docs/history/](docs/history/) and
+the realism reports predate the rename and refer to the project as Forest3D.
+
+## Asset credits
+
+Every 3D model and texture WildSeed ships or downloads is **CC0 (public domain)** —
+no account, no login, no attribution required. Credit is appreciated nonetheless, so
+here is everything the demo worlds reuse (full per-asset provenance, licenses and
+evaluation notes live in [tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md); the
+buildable list with pinned sha256s is [assets/manifest.yaml](assets/manifest.yaml) +
+`assets/manifest.lock.yaml`).
+
+**3D models — [Poly Haven](https://polyhaven.com) (CC0).** Each id resolves as
+`https://polyhaven.com/a/<id>`:
+
+| category | assets |
+|----------|--------|
+| trees (15) | `island_tree_01` `island_tree_02` `island_tree_03` `jacaranda_tree` `tree_small_02` `quiver_tree_01` `quiver_tree_02` `searsia_burchellii` `dead_quiver_trunk` `fir_tree_01` `pine_tree_01` `fir_sapling` `fir_sapling_medium` `pine_sapling_medium` `dead_tree_trunk_02` |
+| rocks (6) | `boulder_01` `rock_07` `namaqualand_boulder_04` `namaqualand_rocks_01` `coast_rocks_01` `sand_rocks_small_01` |
+| bushes (9) | `shrub_01` `shrub_02` `shrub_03` `shrub_04` `fern_02` `wild_rooibos_bush` `crystalline_iceplant` `othonna_cerarioides` `nettle_plant` |
+| grass / ground cover (7) | `grass_medium_01` `grass_medium_02` `grass_bermuda_01` `flower_gazania` `flower_ursinia` `dandelion_01` `dry_branches_medium_01` |
+
+**Ground textures — [ambientCG](https://ambientcg.com) (CC0).** Each id resolves as
+`https://ambientcg.com/view?id=<id>`: `Grass004` (base grass), `Ground027` (sand),
+`Ground054` (dirt/trail), `Gravel023`, `Rocks023` (pebbles), `Snow006`, `Ground037`
+(bare ground). These feed the seeded ground compositor (`wildseed ground`).
+
+**Other bundled data.** The sample DEMs in `dem/` (`terrain.tif`, `demgazebo.dem`, …)
+and the three reference screenshots come from the upstream Forest3D project (see
+Credits above); the screenshots are used only as metric-harness reference images —
+the commercial Maxtree/Megascans assets *shown in them* are not included in, nor
+downloadable through, WildSeed. The procedural landforms (`wildseed terraingen`) are
+self-authored math — no external asset involved.
 
