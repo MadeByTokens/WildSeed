@@ -77,6 +77,7 @@ class WorldPopulator:
             base_path: Path,
             progress_callback: Optional[Callable[[int, str], None]] = None,
             seed: Optional[int] = None,
+            variants: Optional[Dict[str, List[str]]] = None,
     ):
         """Initialize the world populator.
 
@@ -86,6 +87,10 @@ class WorldPopulator:
             seed: Optional RNG seed. When set, model placement is reproducible
                 (same seed -> identical world), which is required for debugging
                 VIO/lidar failures against a specific generated scenario.
+            variants: Optional per-category allow-list of model ids (a biome
+                palette). When set, placement only picks from these; models in
+                the list but missing from models/<cat>/ are skipped with a
+                warning. When None, every model on disk is eligible.
 
         Raises:
             FileNotFoundError: If required paths don't exist.
@@ -95,6 +100,7 @@ class WorldPopulator:
         self.worlds_path = self.base_path / "worlds"
         self.progress_callback = progress_callback
         self.seed = seed
+        self.allowed_variants = variants
 
         # Store (x, y, z, scale) for each placed model
         self.placed_models: Dict[str, List[Tuple[float, float, float, float]]] = {
@@ -153,6 +159,14 @@ class WorldPopulator:
                 for d in category_path.iterdir():
                     if d.is_dir() and not d.name.startswith("."):
                         variants[category].append(d.name)
+                if self.allowed_variants is not None and category in self.allowed_variants:
+                    allowed = self.allowed_variants[category]
+                    on_disk = set(variants[category])
+                    for missing in sorted(set(allowed) - on_disk):
+                        logger.warning(
+                            f"Palette model {category}/{missing} not found in models/ "
+                            "(run tools/build_assets.py?) — skipping")
+                    variants[category] = [v for v in variants[category] if v in allowed]
                 if variants[category]:
                     logger.info(f"Found {len(variants[category])} variants for {category}")
 
