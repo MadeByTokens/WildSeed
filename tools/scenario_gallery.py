@@ -1,8 +1,8 @@
 """Build + render N master-seed scenarios into a diversity gallery.
 
-Proves `forest3d scenario --seed N` end-to-end: each seed yields a different
+Proves `wildseed scenario --seed N` end-to-end: each seed yields a different
 biome/landform/population, each world renders from its hero + oblique cams.
-Runs inside forest3d:egl with --gpus all (same harness as build_scenarios.py).
+Runs inside wildseed:egl with --gpus all (same harness as build_scenarios.py).
 
   python3 tools/scenario_gallery.py [seed ...]      # default: 101 107 108
 
@@ -18,7 +18,7 @@ import yaml
 from PIL import Image, ImageDraw, ImageFont
 
 WS = "/workspace"
-CLI = ["python3", "-m", "forest3d.cli.main"]
+CLI = ["python3", "-m", "wildseed.cli.main"]
 SEEDS = [int(a) for a in sys.argv[1:]] or [101, 107, 108]
 
 

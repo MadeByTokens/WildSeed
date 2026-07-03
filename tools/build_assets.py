@@ -8,8 +8,8 @@ from their CDN) so a rebuild pulls the verifiably-same source assets (the "froze
 guarantee). The normalized/converted outputs are not byte-reproducible because Blender
 embeds timestamps/pointers, but they are deterministic in content.
 
-Run INSIDE forest3d:egl (has Blender + forest3d + network):
-  docker run --rm -v "$PWD:/workspace" --entrypoint bash forest3d:egl-v1 -c \
+Run INSIDE wildseed:egl (has Blender + wildseed + network):
+  docker run --rm -v "$PWD:/workspace" --entrypoint bash wildseed:egl-v1 -c \
     'cd /workspace && python3 tools/build_assets.py'
 
 Optional args: a space-separated list of asset ids to (re)build only those.
@@ -26,7 +26,7 @@ os.chdir(ROOT)
 MANIFEST = "assets/manifest.yaml"
 LOCK = "assets/manifest.lock.yaml"
 CFG = "configs/realism.yaml"
-CLI = ["python3", "-m", "forest3d.cli.main"]
+CLI = ["python3", "-m", "wildseed.cli.main"]
 ONLY = set(sys.argv[1:])
 
 

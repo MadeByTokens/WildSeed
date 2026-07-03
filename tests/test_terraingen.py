@@ -10,8 +10,8 @@ z-extent is slightly less than amplitude_m.
 import numpy as np
 import pytest
 
-from forest3d.config.schema import TerrainGenConfig, PRESET_NAMES
-from forest3d.core.terraingen import TerrainSynthesizer, PRESETS, GDAL_AVAILABLE
+from wildseed.config.schema import TerrainGenConfig, PRESET_NAMES
+from wildseed.core.terraingen import TerrainSynthesizer, PRESETS, GDAL_AVAILABLE
 
 
 def _synth(**kw):
@@ -115,7 +115,7 @@ def test_creek_carves_visible_channel():
 
 
 def test_per_basin_water_models(tmp_path):
-    from forest3d.core.ground import write_basin_water_models
+    from wildseed.core.ground import write_basin_water_models
     _, lakes = _synth(preset="lakeland", seed=11)
     assert len(lakes) >= 1
     dirs = write_basin_water_models(tmp_path, lakes)

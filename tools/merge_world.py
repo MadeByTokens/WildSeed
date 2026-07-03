@@ -1,5 +1,5 @@
 """GRAFT helper (the deliverable merge tool) + proof-camera placement.
-Reads a Forest3D-generated world, grafts ALL <include> blocks (terrain + vegetation)
+Reads a WildSeed-generated world, grafts ALL <include> blocks (terrain + vegetation)
 into the project's shell (6 gz Harmonic plugins + spherical_coordinates), and adds
 proof cameras: two elevated overviews + one ground-level camera auto-aimed at the
 densest tree cluster (parsed from the placed tree poses). Writes forest_full.world.

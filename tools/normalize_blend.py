@@ -1,5 +1,5 @@
 """Blender: open a Poly Haven native .blend, normalize, save a self-contained
-.blend ready for `forest3d convert`.
+.blend ready for `wildseed convert`.
 
   blender -b <in.blend> --python tools/normalize_blend.py -- <out_blend> [scale] [variant]
 

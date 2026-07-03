@@ -2,7 +2,7 @@
 
 import pytest
 
-from forest3d.core.scenario import (BIOME_NAMES, BIOME_SPACE, SCENARIO_FORMAT,
+from wildseed.core.scenario import (BIOME_NAMES, BIOME_SPACE, SCENARIO_FORMAT,
                                     palette_from_manifest, resolve_scenario)
 
 
@@ -60,7 +60,7 @@ def test_unknown_biome_raises():
 
 
 def test_scenario_cli_registered():
-    from forest3d.cli.main import main
+    from wildseed.cli.main import main
     assert "scenario" in main.commands
 
 

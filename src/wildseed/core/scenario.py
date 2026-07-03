@@ -25,7 +25,7 @@ from xml.etree import ElementTree as ET
 import numpy as np
 import yaml
 
-logger = logging.getLogger("forest3d.scenario")
+logger = logging.getLogger("wildseed.scenario")
 
 SCENARIO_FORMAT = 1
 
@@ -180,12 +180,12 @@ def run_scenario(
 ) -> dict:
     """Build the world a resolved spec describes: terraingen -> terrain -> ground
     (+ per-basin water) -> generate. Returns paths of everything written."""
-    from forest3d.config.loader import load_config
-    from forest3d.config.schema import GroundConfig, TerrainGenConfig
-    from forest3d.core.terraingen import synthesize_dem
-    from forest3d.core.terrain import TerrainGenerator
-    from forest3d.core.ground import (GroundCompositor, write_basin_water_models)
-    from forest3d.core.forest import WorldPopulator
+    from wildseed.config.loader import load_config
+    from wildseed.config.schema import GroundConfig, TerrainGenConfig
+    from wildseed.core.terraingen import synthesize_dem
+    from wildseed.core.terrain import TerrainGenerator
+    from wildseed.core.ground import (GroundCompositor, write_basin_water_models)
+    from wildseed.core.forest import WorldPopulator
 
     base_path = Path(base_path)
     seeds = spec["stage_seeds"]

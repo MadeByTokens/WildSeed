@@ -2,7 +2,7 @@
 
 import pytest
 
-from forest3d.config.schema import GroundConfig, GroundLayerSpec, TerrainConfig
+from wildseed.config.schema import GroundConfig, GroundLayerSpec, TerrainConfig
 
 
 def test_ground_defaults():
@@ -34,7 +34,7 @@ def test_terrain_config_has_optional_ground():
 
 
 def test_biomes_registry_well_formed():
-    from forest3d.core.ground import BIOMES
+    from wildseed.core.ground import BIOMES
     for name, b in BIOMES.items():
         assert "base" in b and "layers" in b
         for layer in b["layers"]:
@@ -45,7 +45,7 @@ def test_biomes_registry_well_formed():
 def test_seed_reproducible_random_walk():
     """Same seed -> identical seeded geometry (reproducible scenarios)."""
     import numpy as np
-    from forest3d.core.ground import GroundCompositor
+    from wildseed.core.ground import GroundCompositor
     a = GroundCompositor._random_walk_uv(np.random.default_rng(42))
     b = GroundCompositor._random_walk_uv(np.random.default_rng(42))
     c = GroundCompositor._random_walk_uv(np.random.default_rng(43))

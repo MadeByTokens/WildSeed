@@ -1,5 +1,5 @@
 """Blender: import a Poly Haven glTF, normalize, save a self-contained .blend
-ready for `forest3d convert`.
+ready for `wildseed convert`.
 
   blender -b --python tools/import_gltf.py -- <gltf_path> <out_blend> [scale]
 

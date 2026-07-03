@@ -5,7 +5,7 @@ import inspect
 import numpy as np
 import pytest
 
-from forest3d.core.forest import WorldPopulator
+from wildseed.core.forest import WorldPopulator
 
 
 def test_world_populator_accepts_seed():
@@ -14,7 +14,7 @@ def test_world_populator_accepts_seed():
 
 
 def test_generate_cli_exposes_seed():
-    from forest3d.cli.generate import generate
+    from wildseed.cli.generate import generate
     names = {p.name for p in generate.params}
     assert "seed" in names
 

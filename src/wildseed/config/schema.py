@@ -255,8 +255,8 @@ class PathsConfig(BaseModel):
         return Path(v).expanduser().resolve()
 
 
-class Forest3DConfig(BaseModel):
-    """Main configuration schema for Forest3D."""
+class WildSeedConfig(BaseModel):
+    """Main configuration schema for WildSeed."""
 
     blender: BlenderConfig = Field(default_factory=BlenderConfig)
     terrain: TerrainConfig = Field(default_factory=TerrainConfig)

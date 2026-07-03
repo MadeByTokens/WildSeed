@@ -8,9 +8,9 @@ from xml.etree import ElementTree as ET
 import numpy as np
 from stl import mesh
 
-from forest3d.config.schema import DensityConfig
+from wildseed.config.schema import DensityConfig
 
-logger = logging.getLogger("forest3d.forest")
+logger = logging.getLogger("wildseed.forest")
 
 
 class WorldPopulator:
@@ -485,7 +485,7 @@ class WorldPopulator:
         Returns:
             Path to created world file.
         """
-        from forest3d.utils.sdf import create_world_base, write_world_file
+        from wildseed.utils.sdf import create_world_base, write_world_file
 
         if self.seed is not None:
             self.rng = np.random.default_rng(self.seed)

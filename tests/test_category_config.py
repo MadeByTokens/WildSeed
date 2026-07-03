@@ -1,11 +1,11 @@
 """Backward-compat + resolution tests for per-category conversion config (P0 fork).
 
 Run inside the container:
-  docker run --rm -v "$PWD:/workspace" --entrypoint python3 forest3d:egl \
+  docker run --rm -v "$PWD:/workspace" --entrypoint python3 wildseed:egl \
     -m pytest /workspace/tests/test_category_config.py -q
 """
 
-from forest3d.config.schema import BlenderConfig, CategoryConfig
+from wildseed.config.schema import BlenderConfig, CategoryConfig
 
 
 def test_empty_categories_reproduces_legacy_defaults():

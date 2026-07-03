@@ -8,9 +8,9 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from forest3d.config.schema import BlenderConfig
+from wildseed.config.schema import BlenderConfig
 
-logger = logging.getLogger("forest3d.converter")
+logger = logging.getLogger("wildseed.converter")
 
 
 def find_blender() -> Optional[Path]:
@@ -372,7 +372,7 @@ export_collision("{collision_path}", "{collision_strategy}", {collision_dec})
     def _create_test_world(self, model_name: str, model_dir: Path, category: str) -> Path:
         """Create test world file."""
         from xml.etree import ElementTree as ET
-        from forest3d.utils.sdf import create_world_base, add_ground_plane, write_world_file
+        from wildseed.utils.sdf import create_world_base, add_ground_plane, write_world_file
 
         sdf_root, world = create_world_base("asset_test")
         add_ground_plane(world)

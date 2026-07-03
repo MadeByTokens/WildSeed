@@ -1,10 +1,10 @@
-# Forest3D development Docker image with GDAL, Blender, and Gazebo Harmonic
-# Build: docker build -t forest3d:dev -f docker/Dockerfile.dev .
+# WildSeed development Docker image with GDAL, Blender, and Gazebo Harmonic
+# Build: docker build -t wildseed:dev -f docker/Dockerfile.dev .
 
 FROM ubuntu:22.04
 
 LABEL maintainer="AI4Forest <khalid.bourr@gmail.com>"
-LABEL description="Forest3D Development Image"
+LABEL description="WildSeed Development Image"
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -73,8 +73,8 @@ RUN mkdir -p /opt/blender && \
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
-# Set Blender path for Forest3D
-ENV FOREST3D_BLENDER_PATH=/opt/blender/blender
+# Set Blender path for WildSeed
+ENV WILDSEED_BLENDER_PATH=/opt/blender/blender
 
 # Set Gazebo model path
 ENV GZ_SIM_RESOURCE_PATH=/workspace/models
@@ -89,7 +89,7 @@ RUN pip3 install --no-cache-dir pygdal==$(gdal-config --version).* || true
 WORKDIR /workspace
 
 # Set environment for mounted projects
-ENV FOREST3D_BASE_PATH=/workspace
+ENV WILDSEED_BASE_PATH=/workspace
 
 # Install in editable mode when container starts
 CMD ["bash", "-c", "pip3 install -e '.[dev]' && bash"]

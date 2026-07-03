@@ -6,8 +6,8 @@ from pathlib import Path
 from rich.progress import Progress, BarColumn, TaskProgressColumn, TextColumn
 from rich.table import Table
 
-from forest3d.config.loader import load_config
-from forest3d.core.forest import WorldPopulator
+from wildseed.config.loader import load_config
+from wildseed.core.forest import WorldPopulator
 
 
 @click.command()
@@ -41,10 +41,10 @@ def generate(ctx, base_path, density, output, seed, verbose):
 
     \b
     Examples:
-        forest3d generate
-        forest3d generate --density '{"tree": 100, "rock": 20}'
-        forest3d generate -b ./my-project -o ./worlds/custom.world
-        forest3d generate -v  # Show detailed stats
+        wildseed generate
+        wildseed generate --density '{"tree": 100, "rock": 20}'
+        wildseed generate -b ./my-project -o ./worlds/custom.world
+        wildseed generate -v  # Show detailed stats
 
     \b
     Default density:
@@ -80,7 +80,7 @@ def generate(ctx, base_path, density, output, seed, verbose):
     if not (project_base / "models").exists():
         raise click.ClickException(
             f"Models directory not found in {project_base}\n\n"
-            "Make sure you're in a Forest3D project directory with:\n"
+            "Make sure you're in a WildSeed project directory with:\n"
             "  - models/ground/  (terrain)\n"
             "  - models/tree/    (trees)\n"
             "  - etc."

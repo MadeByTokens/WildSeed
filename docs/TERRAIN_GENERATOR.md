@@ -1,4 +1,4 @@
-# Procedural Terrain Generator (`forest3d terraingen`)
+# Procedural Terrain Generator (`wildseed terraingen`)
 
 Synthesize **seeded, varied landforms** — hills, mounts, valleys, flatlands,
 basins→lakes, creeks — instead of meshing a single fixed DEM. The same `--seed`
@@ -8,7 +8,7 @@ regenerated exactly); a new seed gives a new world.
 It writes a **GeoTIFF DEM**, which feeds the existing, proven pipeline unchanged:
 
 ```
-forest3d terraingen  →  forest3d terrain  →  forest3d ground  →  forest3d generate
+wildseed terraingen  →  wildseed terrain  →  wildseed ground  →  wildseed generate
    (synth DEM)            (mesh + UVs)         (PBR ground)        (place trees/rocks)
 ```
 
@@ -16,13 +16,13 @@ forest3d terraingen  →  forest3d terrain  →  forest3d ground  →  forest3d 
 
 ```bash
 # 1. synthesize a landform  (writes dem/synth.tif [+ dem/synth.lakes.json])
-forest3d terraingen --preset hilly --seed 7 --size 192 -o dem/synth.tif
+wildseed terraingen --preset hilly --seed 7 --size 192 -o dem/synth.tif
 # 2. mesh it (overwrites models/ground)
-forest3d terrain --dem dem/synth.tif
+wildseed terrain --dem dem/synth.tif
 # 3. texture the ground (uniform crisp, or patchy seeded composite)
-forest3d ground --mode patchy --biome grassland --seed 7
+wildseed ground --mode patchy --biome grassland --seed 7
 # 4. populate it (reproducible placement)
-forest3d generate --density '{"tree":40,"rock":12,"bush":20}' --seed 7
+wildseed generate --density '{"tree":40,"rock":12,"bush":20}' --seed 7
 ```
 
 The render harness used in this repo is `tools/terrain_scene.py` (+ `capture_cams.py`);
@@ -79,8 +79,8 @@ the rolling mid-scale hills. Use **`--detail`** when you want to keep the big la
 but calm the fine surface "sponginess":
 
 ```bash
-forest3d terraingen --preset hilly --seed 7 --detail 0.2   # smooth surface, SAME hills
-forest3d terraingen --preset mountainous --seed 7 --ridged 0.2 --detail 0.6  # cleaner massif
+wildseed terraingen --preset hilly --seed 7 --detail 0.2   # smooth surface, SAME hills
+wildseed terraingen --preset mountainous --seed 7 --ridged 0.2 --detail 0.6  # cleaner massif
 ```
 
 Lakes, peaks, the valley trough, and creeks are added as *separate* features, so
@@ -98,13 +98,13 @@ surface roughness never disturbs them.
 
 `floor_z` / `suggested_water_level` are in the **meshed terrain's Z frame** (the
 pipeline shifts the mesh so its minimum Z = 0, in metres at the default scale).
-Place water with `forest3d ground`:
+Place water with `wildseed ground`:
 
 ```bash
 # single global plane at one level (floods everything below it):
-forest3d ground --mode patchy --biome grassland --water-level <L>
+wildseed ground --mode patchy --biome grassland --water-level <L>
 # OR one plane PER basin, each at its own level (reads the sidecar):
-forest3d ground --mode patchy --biome grassland --auto-water --dem dem/synth.tif
+wildseed ground --mode patchy --biome grassland --auto-water --dem dem/synth.tif
 ```
 
 (`--auto-water` is described in `docs/TUTORIAL.md`.)

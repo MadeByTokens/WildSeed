@@ -1,16 +1,16 @@
-"""Configuration module for Forest3D."""
+"""Configuration module for WildSeed."""
 
-from forest3d.config.schema import (
-    Forest3DConfig,
+from wildseed.config.schema import (
+    WildSeedConfig,
     BlenderConfig,
     TerrainConfig,
     DensityConfig,
     PathsConfig,
 )
-from forest3d.config.loader import load_config, find_config_file
+from wildseed.config.loader import load_config, find_config_file
 
 __all__ = [
-    "Forest3DConfig",
+    "WildSeedConfig",
     "BlenderConfig",
     "TerrainConfig",
     "DensityConfig",

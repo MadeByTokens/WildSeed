@@ -1,10 +1,10 @@
-# Forest3D Default Configuration
-# Copy to ./forest3d.yaml or ~/.config/forest3d/config.yaml
+# WildSeed Default Configuration
+# Copy to ./wildseed.yaml or ~/.config/wildseed/config.yaml
 
 # Blender configuration for asset conversion
 blender:
   # Path to Blender executable (auto-detected if not set)
-  # Override with FOREST3D_BLENDER_PATH environment variable
+  # Override with WILDSEED_BLENDER_PATH environment variable
   # path: /usr/bin/blender
 
   # Mesh decimation ratios (lower = simpler mesh)

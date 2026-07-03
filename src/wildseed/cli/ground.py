@@ -3,8 +3,8 @@
 import click
 from pathlib import Path
 
-from forest3d.config.loader import load_config
-from forest3d.config.schema import GroundConfig
+from wildseed.config.loader import load_config
+from wildseed.config.schema import GroundConfig
 
 
 @click.command()
@@ -34,20 +34,20 @@ def ground(ctx, ground_dir, texture_root, mode, biome, seed, resolution, base_ma
            uniform_tile, no_randomize, tile_warp, water_level, auto_water, dem_path, models_dir):
     """Generate the terrain ground PBR material (uniform or patchy/seeded).
 
-    Operates on an already-generated terrain (run `forest3d terrain` first).
+    Operates on an already-generated terrain (run `wildseed terrain` first).
     Reproducible: the same --seed yields the same ground, so randomized worlds
     for VIO/lidar testing can be regenerated exactly.
 
     \b
     Examples:
         # crisp uniform grass
-        forest3d ground --mode uniform --biome grassland
+        wildseed ground --mode uniform --biome grassland
         # seeded patchy scenario (trails + sand/gravel/pebble patches)
-        forest3d ground --mode patchy --biome grassland --seed 42
+        wildseed ground --mode patchy --biome grassland --seed 42
         # a different random scenario, same biome
-        forest3d ground --mode patchy --biome grassland --seed 99
+        wildseed ground --mode patchy --biome grassland --seed 99
         # snow biome with a flooded low area
-        forest3d ground --mode patchy --biome snow --seed 7 --water-level 5.0
+        wildseed ground --mode patchy --biome snow --seed 7 --water-level 5.0
     """
     console = ctx.obj["console"]
     logger = ctx.obj["logger"]
@@ -76,13 +76,13 @@ def ground(ctx, ground_dir, texture_root, mode, biome, seed, resolution, base_ma
     gdir = Path(ground_dir)
     if not (gdir / "mesh" / "terrain.obj").exists():
         raise click.ClickException(
-            f"{gdir}/mesh/terrain.obj not found. Run `forest3d terrain --dem ...` first."
+            f"{gdir}/mesh/terrain.obj not found. Run `wildseed terrain --dem ...` first."
         )
     troot = Path(gc.texture_root) if gc.texture_root else Path(texture_root)
     if not troot.exists():
         raise click.ClickException(f"Texture root not found: {troot}")
 
-    from forest3d.core.ground import GroundCompositor, write_water_model, write_basin_water_models
+    from wildseed.core.ground import GroundCompositor, write_water_model, write_basin_water_models
 
     console.print(f"[bold]Ground material[/bold]  mode=[cyan]{gc.mode}[/cyan] biome=[cyan]{gc.biome}[/cyan] "
                   f"seed=[cyan]{gc.seed}[/cyan]")

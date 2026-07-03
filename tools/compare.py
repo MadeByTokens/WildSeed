@@ -30,7 +30,7 @@ The Gazebo toolbar (top) + playbar (bottom) are cropped from the originals FIRST
 GUI corners count as strong features.
 
 Run (in the container, where the metrics gate lives):
-  docker run --rm -v "$PWD:/workspace" --entrypoint bash forest3d:egl \\
+  docker run --rm -v "$PWD:/workspace" --entrypoint bash wildseed:egl \\
     -c 'cd /workspace && python3 tools/compare.py'
 
 Outputs:

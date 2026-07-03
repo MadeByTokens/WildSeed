@@ -1,14 +1,14 @@
-# Forest3D Docker image with GDAL, Blender, and Gazebo Harmonic
-# Build: docker build -t forest3d -f docker/Dockerfile .
-# Run:   docker run -v $(pwd):/workspace forest3d --help
-# Run with GUI: docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $(pwd):/workspace forest3d launch
+# WildSeed Docker image with GDAL, Blender, and Gazebo Harmonic
+# Build: docker build -t wildseed -f docker/Dockerfile .
+# Run:   docker run -v $(pwd):/workspace wildseed --help
+# Run with GUI: docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $(pwd):/workspace wildseed launch
 
 # Base image pinned by DIGEST (not the moving `22.04` tag) so the OS layer is frozen.
 # ubuntu:22.04 == 22.04.5 LTS as of 2026-06-28. Update the digest deliberately.
 FROM ubuntu:22.04@sha256:ce941a2a18bbb922e434d6d6d2b31e571a5c3826eaf6ada0a41dcc905bd2d906
 
 LABEL maintainer="AI4Forest <khalid.bourr@gmail.com>"
-LABEL description="Forest3D - Terrain and forest generation for Gazebo simulation"
+LABEL description="WildSeed - Terrain and forest generation for Gazebo simulation"
 LABEL version="0.1.0"
 
 # Prevent interactive prompts during package installation
@@ -81,33 +81,33 @@ RUN mkdir -p /opt/blender && \
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
-# Set Blender path for Forest3D
-ENV FOREST3D_BLENDER_PATH=/opt/blender/blender
+# Set Blender path for WildSeed
+ENV WILDSEED_BLENDER_PATH=/opt/blender/blender
 
 # Set Gazebo model path
 ENV GZ_SIM_RESOURCE_PATH=/workspace/models
 
 # Create non-root user for security
-RUN useradd -m -s /bin/bash forest3d
-WORKDIR /home/forest3d
+RUN useradd -m -s /bin/bash wildseed
+WORKDIR /home/wildseed
 
-# Copy and install Forest3D
-COPY --chown=forest3d:forest3d . /home/forest3d/forest3d-src
+# Copy and install WildSeed
+COPY --chown=wildseed:wildseed . /home/wildseed/wildseed-src
 
-# Pin pip, then install Forest3D against the frozen constraints lock so the exact
+# Pin pip, then install WildSeed against the frozen constraints lock so the exact
 # dependency versions that work in this image are reinstalled on every rebuild.
 RUN pip3 install --no-cache-dir "pip==${PIP_VERSION}" && \
-    pip3 install --no-cache-dir -c /home/forest3d/forest3d-src/docker/constraints.txt \
-        /home/forest3d/forest3d-src && \
+    pip3 install --no-cache-dir -c /home/wildseed/wildseed-src/docker/constraints.txt \
+        /home/wildseed/wildseed-src && \
     pip3 install --no-cache-dir pygdal==$(gdal-config --version).* || true
 
-USER forest3d
+USER wildseed
 
 # Default working directory for mounting projects
 WORKDIR /workspace
 
 # Set environment for mounted projects
-ENV FOREST3D_BASE_PATH=/workspace
+ENV WILDSEED_BASE_PATH=/workspace
 
-ENTRYPOINT ["forest3d"]
+ENTRYPOINT ["wildseed"]
 CMD ["--help"]

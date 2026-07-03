@@ -12,7 +12,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from stl import mesh as stl_mesh
 
-from forest3d.config.schema import TerrainConfig
+from wildseed.config.schema import TerrainConfig
 
 try:
     from osgeo import gdal
@@ -20,7 +20,7 @@ try:
 except ImportError:
     GDAL_AVAILABLE = False
 
-logger = logging.getLogger("forest3d.terrain")
+logger = logging.getLogger("wildseed.terrain")
 
 
 def find_blender() -> Optional[Path]:
@@ -218,7 +218,7 @@ class TerrainGenerator:
     def _write_obj(self, path: Path, vertices: np.ndarray, uvs: np.ndarray, normals: np.ndarray, faces: np.ndarray) -> None:
         """Write OBJ with UVs and normals."""
         with open(path, 'w') as f:
-            f.write("# Terrain mesh - Forest3D\n")
+            f.write("# Terrain mesh - WildSeed\n")
             for v in vertices:
                 f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
             for uv in uvs:

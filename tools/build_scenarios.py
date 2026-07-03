@@ -1,6 +1,6 @@
-"""Build the 6 Forest3D demo scenarios end-to-end and render galleries.
+"""Build the 6 WildSeed demo scenarios end-to-end and render galleries.
 
-Runs inside forest3d:egl with --gpus all. For each scenario:
+Runs inside wildseed:egl with --gpus all. For each scenario:
   terraingen -> terrain -> ground (patchy biome [+auto-water]) -> generate (seeded)
   -> terrain_scene (graft placed models + cameras) -> render hero + oblique + top.
 
@@ -9,7 +9,7 @@ assets/manifest.yaml. `generate` picks a random variant per slot from whatever i
 models/<cat>/, so for each scenario we stash every model NOT in that biome's palette
 (across tree/bush/rock/grass), generate, then restore. Density (the tree/rock/bush/
 grass counts) is the user-tunable knob: edit it here, or override per run with
-`forest3d generate --density '{"tree":80,...}'`.
+`wildseed generate --density '{"tree":80,...}'`.
 
 Output: frames/scn_<name>_{hero,oblique,top}.npy and:
   tools/scenarios_gallery.png   (hero, human-scale)
@@ -24,7 +24,7 @@ import numpy as np
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-CLI = ["python3", "-m", "forest3d.cli.main"]
+CLI = ["python3", "-m", "wildseed.cli.main"]
 WS = "/workspace"
 MODELS = os.path.join(WS, "models")
 CATS = ["tree", "bush", "rock", "grass"]

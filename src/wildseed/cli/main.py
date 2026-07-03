@@ -1,16 +1,16 @@
-"""Unified CLI for Forest3D."""
+"""Unified CLI for WildSeed."""
 
 import click
 from rich.console import Console
 
-from forest3d import __version__
-from forest3d.utils.logging import setup_logging
+from wildseed import __version__
+from wildseed.utils.logging import setup_logging
 
 console = Console()
 
 
 @click.group()
-@click.version_option(version=__version__, prog_name="forest3d")
+@click.version_option(version=__version__, prog_name="wildseed")
 @click.option("-v", "--verbose", count=True, help="Increase verbosity (-v, -vv, -vvv)")
 @click.option("-q", "--quiet", is_flag=True, help="Suppress all output except errors")
 @click.option(
@@ -18,29 +18,29 @@ console = Console()
 )
 @click.pass_context
 def main(ctx, verbose, quiet, config_path):
-    """Forest3D - Terrain and forest generation for Gazebo simulation.
+    """WildSeed - Terrain and forest generation for Gazebo simulation.
 
     Generate realistic outdoor environments for robotics simulation from
     DEM data and Blender assets.
 
     \b
     Examples:
-        forest3d terrain --dem terrain.tif
-        forest3d convert --input ./blender-assets --output ./models
-        forest3d generate --density '{"tree": 50, "rock": 10}'
+        wildseed terrain --dem terrain.tif
+        wildseed convert --input ./blender-assets --output ./models
+        wildseed generate --density '{"tree": 50, "rock": 10}'
 
     \b
     Configuration:
-        Forest3D looks for config files in these locations:
-        - ./forest3d.yaml
-        - ~/.config/forest3d/config.yaml
-        - ~/.forest3d.yaml
+        WildSeed looks for config files in these locations:
+        - ./wildseed.yaml
+        - ~/.config/wildseed/config.yaml
+        - ~/.wildseed.yaml
 
     \b
     Environment Variables:
-        FOREST3D_BLENDER_PATH  - Path to Blender executable
-        FOREST3D_BASE_PATH     - Project base directory
-        FOREST3D_MODELS_PATH   - Models output directory
+        WILDSEED_BLENDER_PATH  - Path to Blender executable
+        WILDSEED_BASE_PATH     - Project base directory
+        WILDSEED_MODELS_PATH   - Models output directory
     """
     ctx.ensure_object(dict)
 
@@ -57,13 +57,13 @@ def main(ctx, verbose, quiet, config_path):
 
 
 # Import and register subcommands
-from forest3d.cli.terrain import terrain
-from forest3d.cli.terraingen import terraingen
-from forest3d.cli.convert import convert
-from forest3d.cli.generate import generate
-from forest3d.cli.launch import launch
-from forest3d.cli.ground import ground
-from forest3d.cli.scenario import scenario
+from wildseed.cli.terrain import terrain
+from wildseed.cli.terraingen import terraingen
+from wildseed.cli.convert import convert
+from wildseed.cli.generate import generate
+from wildseed.cli.launch import launch
+from wildseed.cli.ground import ground
+from wildseed.cli.scenario import scenario
 
 main.add_command(terrain)
 main.add_command(terraingen)

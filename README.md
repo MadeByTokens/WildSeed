@@ -1,33 +1,23 @@
-# Forest3D - Terrain and Forest Generation for Gazebo
+# WildSeed — reproducible wilderness for robot perception
 
-Forest3D eliminates the manual overhead of building realistic simulation environments. Using DEM terrain data and Blender assets, it automatically generates collision-accurate Gazebo worlds with procedurally placed vegetation, rocks, and trees—ensuring both visual realism and physical fidelity for simulation.
+**One seed, a whole wilderness.** WildSeed generates randomized, feature-rich outdoor
+Gazebo worlds for testing VIO / LIO / SLAM algorithms — procedural terrain, seeded
+ground materials, lakes, and hundreds of placed CC0 plants and rocks — and every
+world is **reproducible from a single master seed**, so a failing odometry run
+can name the exact world it saw and anyone can regenerate it.
 
-| Forest Environment – Soil 1 | Forest Environment – Soil 2 | Forest Environment – Soil 3 |
-|-----------------|-------------|-------------------|
-| ![](https://raw.githubusercontent.com/unitsSpaceLab/Forest3D/feature/terrain-texture/Screenshot%20from%202026-01-08%2023-56-51.png) | ![](https://raw.githubusercontent.com/unitsSpaceLab/Forest3D/feature/terrain-texture/Screenshot%20from%202026-01-09%2000-01-54.png) | ![](https://raw.githubusercontent.com/unitsSpaceLab/Forest3D/feature/terrain-texture/Screenshot%20from%202026-01-09%2000-04-26.png) |
-
-
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-## Demo
+![master-seed scenarios](tools/scenario_seeds_gallery.png)
 
-LiDAR point cloud (RViz) accurately captures the 3D assets, confirming Forest3D outputs are ready for real sensor-based simulation workflows.
-<video src="https://github.com/user-attachments/assets/952f6a1d-dbc8-47dd-bce7-383bfa85e7ca" autoplay loop muted playsinline width="100%"/>
-
-> **Need wheel-soil terramechanics?** A terramechanics-aware version
-> (real-time Bekker-Wong wheel-soil forces, used in the IFIT 2026 paper)
-> lives on the [`IFIT-2026` branch](https://github.com/unitsSpaceLab/Forest3D/tree/IFIT-2026).
-> This `main` branch is the lighter environment-generation pipeline (no terramechanics).
-
-## Tutorial
-
-[![Watch the tutorial](https://img.youtube.com/vi/fLvci8LoMeY/maxresdefault.jpg)](https://youtu.be/fLvci8LoMeY)
+*Three master seeds, three worlds: `--seed 101` grows a lakeland wetland,
+`--seed 107` rolling temperate hills, `--seed 108` an alpine massif. Same seed →
+identical world, always.*
 
 ## Pipeline
 
-Forest3D follows a 4-step pipeline to generate simulation environments:
+WildSeed follows a 4-step pipeline to generate simulation environments:
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -42,52 +32,52 @@ Forest3D follows a 4-step pipeline to generate simulation environments:
 
 | Step | Command | Input | Output |
 |------|---------|-------|--------|
-| 1 | `forest3d terrain` | DEM file (.tif) | Terrain mesh + SDF model |
-| 2 | `forest3d convert` | Blender files (.blend) | Gazebo models (glTF + SDF) |
-| 3 | `forest3d generate` | models/ directory | World file (.world) |
-| 4 | `forest3d launch` | World file | Gazebo simulation |
+| 1 | `wildseed terrain` | DEM file (.tif) | Terrain mesh + SDF model |
+| 2 | `wildseed convert` | Blender files (.blend) | Gazebo models (glTF + SDF) |
+| 3 | `wildseed generate` | models/ directory | World file (.world) |
+| 4 | `wildseed launch` | World file | Gazebo simulation |
 
 **Example workflow:**
 ```bash
 # Step 1: Generate terrain from DEM
-forest3d terrain --dem ./dem/terrain.tif
+wildseed terrain --dem ./dem/terrain.tif
 
 # Step 2: Convert Blender assets (auto-detects categories from subfolders)
-forest3d convert -i ./Blender-Assets -o ./models
+wildseed convert -i ./Blender-Assets -o ./models
 
 # Step 3: Generate forest world (places models on terrain)
-forest3d generate --density '{"tree": 50, "rock": 10, "bush": 20}'
+wildseed generate --density '{"tree": 50, "rock": 10, "bush": 20}'
 
 # Step 4: Launch Gazebo to view the result
-forest3d launch
+wildseed launch
 ```
 
 ## Procedural terrain & seeded scenarios
 
-Beyond meshing a fixed DEM, Forest3D can **synthesize** varied, seeded landforms —
+Beyond meshing a fixed DEM, WildSeed can **synthesize** varied, seeded landforms —
 rolling hills, mountains, valleys, flatlands, basins→lakes, creeks — and randomize
 whole scenarios reproducibly (same `--seed` → same world) for VIO/lidar testing.
 
-**One command, one master seed** — `forest3d scenario` chains every stage
+**One command, one master seed** — `wildseed scenario` chains every stage
 (landform → mesh → ground material → water → model placement), deriving each
 stage's seed from the master seed and drawing the biome, terrain shape and
 densities from per-biome envelopes. The full resolved recipe is written to
 `worlds/scenario_<seed>.yaml`, so any world reproduces from its seed alone:
 
 ```bash
-forest3d scenario --seed 42                      # fully random, byte-reproducible
-forest3d scenario --seed 42 --biome alpine       # fix the biome, randomize the rest
-forest3d scenario --seed 7  --density-scale 1.5  # denser variant of seed 7
-forest3d scenario --seed 7  --dry-run            # print the resolved recipe only
+wildseed scenario --seed 42                      # fully random, byte-reproducible
+wildseed scenario --seed 42 --biome alpine       # fix the biome, randomize the rest
+wildseed scenario --seed 7  --density-scale 1.5  # denser variant of seed 7
+wildseed scenario --seed 7  --dry-run            # print the resolved recipe only
 ```
 
 The individual stages remain available for manual control:
 
 ```bash
-forest3d terraingen --preset lakeland --seed 7 -o dem/synth.tif   # synth landform
-forest3d terrain    --dem dem/synth.tif                           # mesh it
-forest3d ground     --mode patchy --biome grassland --auto-water --dem dem/synth.tif
-forest3d generate   --density '{"tree":35,"rock":12}' --seed 7    # populate
+wildseed terraingen --preset lakeland --seed 7 -o dem/synth.tif   # synth landform
+wildseed terrain    --dem dem/synth.tif                           # mesh it
+wildseed ground     --mode patchy --biome grassland --auto-water --dem dem/synth.tif
+wildseed generate   --density '{"tree":35,"rock":12}' --seed 7    # populate
 ```
 
 ![demo scenarios](tools/scenarios_gallery.png)
@@ -98,13 +88,13 @@ structure (canopy trees / understory shrubs / grass + flowers) built from **CC0
 Poly Haven assets** and reproduced with **no account or login**:
 
 ```bash
-# NOTE: the demo renderer needs a GPU (ogre2/EGL). Run inside the forest3d:egl image with
+# NOTE: the demo renderer needs a GPU (ogre2/EGL). Run inside the wildseed:egl image with
 # --gpus all; see "Gotchas, best practices & caveats" below. Asset build needs Blender only.
 python3 tools/build_assets.py       # fetch+convert the CC0 asset set (idempotent)
 python3 tools/build_scenarios.py    # build all 6 + render tools/scenarios_gallery.png
 ```
 
-Density is fully tunable per category — `forest3d generate --density
+Density is fully tunable per category — `wildseed generate --density
 '{"tree":80,"rock":6,"bush":40,"grass":120}' --seed 7` — same `--seed` → identical world.
 
 **Docs:**
@@ -133,7 +123,7 @@ credits in [tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md)).
 > `docker build` can fail if they drop `1.0.0-1~jammy` / bump GDAL (which could also break
 > the numpy-1.26 ABI pairing). A Dockerfile can't pin a repo that deletes old debs. For a
 > guaranteed-reproducible artifact, **save the built image**, don't rely on rebuilding:
-> `docker save forest3d:egl | gzip > forest3d-egl-v1.tar.gz` (or push to a registry).
+> `docker save wildseed:egl | gzip > wildseed-egl-v1.tar.gz` (or push to a registry).
 
 ## Gotchas, best practices & caveats
 
@@ -141,16 +131,16 @@ Hard-won lessons (and the cheapest way to avoid each). These cost real debugging
 them before the demo/realism pipeline surprises you.
 
 - **Rendering needs a real GPU (ogre2/EGL).** The scenario/metric renders use the `ogre2`
-  engine via EGL. Run them in the `forest3d:egl` image with `--gpus all` and
+  engine via EGL. Run them in the `wildseed:egl` image with `--gpus all` and
   `NVIDIA_DRIVER_CAPABILITIES=all`. On CPU/llvmpipe you get blank or wrong frames. The plain
   pipeline (`terrain`/`convert`/`generate`) does **not** need a GPU; only the render step does.
   ```bash
   docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all -e PYTHONPATH=/workspace/src \
-    -v "$PWD:/workspace" --entrypoint bash forest3d:egl -c 'cd /workspace && python3 tools/build_scenarios.py'
+    -v "$PWD:/workspace" --entrypoint bash wildseed:egl -c 'cd /workspace && python3 tools/build_scenarios.py'
   ```
-- **Editing the library inside the container? Shadow the installed package.** `forest3d` is
-  **pip-installed** into the image, so `python3 -m forest3d ...` imports the *baked-in* copy and
-  silently ignores your edits to `src/forest3d/**`. Pass `-e PYTHONPATH=/workspace/src` to make
+- **Editing the library inside the container? Shadow the installed package.** `wildseed` is
+  **pip-installed** into the image, so `python3 -m wildseed ...` imports the *baked-in* copy and
+  silently ignores your edits to `src/wildseed/**`. Pass `-e PYTHONPATH=/workspace/src` to make
   the workspace source win. Symptom if you forget: metrics/output identical after a "change."
   (CLI flags and the `tools/*.py` scripts take effect without this — they read the live files.)
 - **Determinism is a feature — use `--seed`.** Same `--seed` + preset → byte-identical DEM and
@@ -186,7 +176,7 @@ them before the demo/realism pipeline surprises you.
 - **Procedural Terrain**: seeded synthesis of hills/mountains/valleys/lakes/creeks (`terraingen`)
 - **Asset Processing**: Automatic Blender to Gazebo conversion with optimized collision meshes
 - **Forest Population**: Intelligent procedural placement with natural clustering patterns
-- **Unified CLI**: Simple `forest3d` command with subcommands for each operation
+- **Unified CLI**: Simple `wildseed` command with subcommands for each operation
 - **Docker Support**: Pre-built images with GDAL for easy deployment
 
 ## Quick Start
@@ -197,14 +187,14 @@ The Docker image includes everything you need: Python, GDAL, Blender 4.2, and Ga
 
 ```bash
 # Build the image (downloads Blender + Gazebo, ~2GB)
-cd Forest3D
-docker build -t forest3d -f docker/Dockerfile .
+cd WildSeed
+docker build -t wildseed -f docker/Dockerfile .
 
 # Generate a forest world
-docker run -v $(pwd):/workspace forest3d generate
+docker run -v $(pwd):/workspace wildseed generate
 
 # Convert Blender assets to Gazebo models
-docker run -v $(pwd):/workspace forest3d convert \
+docker run -v $(pwd):/workspace wildseed convert \
   -i /workspace/Blender-Assets -o /workspace/models -c tree
 
 # Launch Gazebo to view the world (requires X11)
@@ -213,15 +203,15 @@ docker run -e DISPLAY=$DISPLAY \
            -v /tmp/.X11-unix:/tmp/.X11-unix \
            -v $(pwd):/workspace \
            --network host \
-           forest3d launch
+           wildseed launch
 ```
 
 ### Option 2: pip install
 
 ```bash
 # Clone and install
-git clone https://github.com/khalidbourr/Forest3D.git
-cd Forest3D
+git clone https://github.com/ricardodeazambuja/WildSeed.git
+cd WildSeed
 pip install -e .
 
 # For terrain generation, also install GDAL:
@@ -236,42 +226,42 @@ pip install "pygdal==$(gdal-config --version).*"
 
 ```bash
 # Use default settings
-forest3d generate
+wildseed generate
 
 # Custom density
-forest3d generate --density '{"tree": 100, "rock": 20, "bush": 30}'
+wildseed generate --density '{"tree": 100, "rock": 20, "bush": 30}'
 
 # Use a preset configuration
-forest3d -c configs/examples/dense_forest.yaml generate
+wildseed -c configs/examples/dense_forest.yaml generate
 ```
 
 ### Generate Terrain from DEM
 
 ```bash
-forest3d terrain --dem ./dem/terrain.tif
+wildseed terrain --dem ./dem/terrain.tif
 
 # With texture from Blender
-forest3d terrain --dem ./dem/terrain.tif --texture ./Blender-Assets/soil/soil.blend
+wildseed terrain --dem ./dem/terrain.tif --texture ./Blender-Assets/soil/soil.blend
 
 # With options
-forest3d terrain --dem ./dem/terrain.tif --scale 2.0 --smooth 1.5 --enhance
+wildseed terrain --dem ./dem/terrain.tif --scale 2.0 --smooth 1.5 --enhance
 ```
 
 ### Convert Blender Assets
 
 ```bash
 # Auto-detect categories from subfolders (tree/, rock/, bush/, etc.)
-forest3d convert -i ./Blender-Assets -o ./models
+wildseed convert -i ./Blender-Assets -o ./models
 
 # Or specify category manually
-forest3d convert -i ./Blender-Assets/tree -o ./models -c tree
+wildseed convert -i ./Blender-Assets/tree -o ./models -c tree
 ```
 
 ### Launch Gazebo
 
 ```bash
 # Using the CLI (auto-configures model path)
-forest3d launch
+wildseed launch
 
 # Or manually with Gazebo Sim (Harmonic)
 export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/models
@@ -281,21 +271,21 @@ gz sim worlds/forest_world.world
 ## CLI Reference
 
 ```
-forest3d --help                    # Show all commands
-forest3d terrain --help            # Terrain generation help
-forest3d convert --help            # Asset conversion help
-forest3d generate --help           # Forest generation help
-forest3d launch --help             # Launch Gazebo help
+wildseed --help                    # Show all commands
+wildseed terrain --help            # Terrain generation help
+wildseed convert --help            # Asset conversion help
+wildseed generate --help           # Forest generation help
+wildseed launch --help             # Launch Gazebo help
 
 # Global options
-forest3d -v ...                    # Verbose output
-forest3d -vv ...                   # Debug output
-forest3d -c config.yaml ...        # Use config file
+wildseed -v ...                    # Verbose output
+wildseed -vv ...                   # Debug output
+wildseed -c config.yaml ...        # Use config file
 ```
 
 ## Configuration
 
-Create `forest3d.yaml` in your project directory:
+Create `wildseed.yaml` in your project directory:
 
 ```yaml
 terrain:
@@ -321,15 +311,15 @@ See `configs/examples/` for preset configurations.
 
 | Variable | Description |
 |----------|-------------|
-| `FOREST3D_BLENDER_PATH` | Path to Blender executable |
-| `FOREST3D_BASE_PATH` | Project base directory |
-| `FOREST3D_MODELS_PATH` | Models output directory |
+| `WILDSEED_BLENDER_PATH` | Path to Blender executable |
+| `WILDSEED_BASE_PATH` | Project base directory |
+| `WILDSEED_MODELS_PATH` | Models output directory |
 
 ## Project Structure
 
 ```
-Forest3D/
-├── src/forest3d/          # Python package (the installed `forest3d` CLI) — independent of tools/
+WildSeed/
+├── src/wildseed/          # Python package (the installed `wildseed` CLI) — independent of tools/
 │   ├── cli/               # Command-line interface
 │   ├── core/              # Core modules (terrain, terraingen, converter, forest, ground)
 │   ├── config/            # Configuration handling (pydantic schema, loader)
@@ -377,7 +367,7 @@ Forest3D/
    ```
 2. Convert to Gazebo format:
    ```bash
-   forest3d convert -i ./Blender-Assets -o ./models
+   wildseed convert -i ./Blender-Assets -o ./models
    ```
 3. Models will be available for forest generation
 
@@ -394,14 +384,14 @@ pytest
 black src/
 
 # Lint
-pylint src/forest3d/
+pylint src/wildseed/
 ```
 
 ## Docker Compose
 
 ```bash
 # Development environment (with Blender + GDAL + Gazebo)
-docker compose -f docker/docker-compose.yml run forest3d-dev
+docker compose -f docker/docker-compose.yml run wildseed-dev
 
 # Convert Blender assets
 docker compose -f docker/docker-compose.yml run convert \
@@ -431,9 +421,9 @@ pip install "pygdal==$(gdal-config --version).*"
 ### Blender Not Found
 Set the path explicitly:
 ```bash
-export FOREST3D_BLENDER_PATH=/path/to/blender
+export WILDSEED_BLENDER_PATH=/path/to/blender
 # or
-forest3d convert --blender /path/to/blender ...
+wildseed convert --blender /path/to/blender ...
 ```
 
 ### Model Path Issues
@@ -444,14 +434,31 @@ export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/models
 
 ## License
 
-This project is licensed under the AGPL-3.0 - see the LICENSE file for details.
-
-
-> **Need Custom Environments & Commercial Use ?**
-> Forest3D ships natural/forest environments out of the box. Need a different one: vineyard, orchard, agricultural row crops, urban, lunar, or a custom site? Custom environment builds are available.
-> Contact the authors
+This project is licensed under the **AGPL-3.0** — see the [LICENSE](LICENSE) file for
+details. Portions derive from the upstream Forest3D project (see Credits below),
+which shipped the same AGPL-3.0 license file.
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Credits
+
+WildSeed began as a fork of
+**[Forest3D](https://github.com/unitsSpaceLab/Forest3D)** by Khalid Bourr
+(AI4Forest / unitsSpaceLab) — the original DEM-terrain → Blender-asset-convert →
+procedural-placement pipeline for Gazebo is his work, and the full commit history of
+that project is preserved in this repository. The three reference screenshots bundled
+for the metric harness (`Screenshot from 2026-01-*.png`) are renders from that
+project. Thank you, Khalid.
+
+On top of that foundation, WildSeed added the seeded procedural terrain synthesizer,
+the seeded patchy-ground compositor with per-basin water, the master-seed `scenario`
+orchestrator, the manifest-driven CC0 asset pipeline (all demo assets from
+[Poly Haven](https://polyhaven.com) and [ambientCG](https://ambientcg.com), CC0 —
+per-asset credits in [tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md)), the
+image-level realism metric harness, and the reproducibility guarantees (pinned Docker,
+sha256-locked assets, byte-identical worlds per seed). Documents under
+[docs/history/](docs/history/) and the realism reports predate the rename and refer to
+the project as Forest3D.
 

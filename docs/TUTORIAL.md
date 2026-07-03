@@ -1,10 +1,10 @@
-# Forest3D tutorial — build & randomize a world
+# WildSeed tutorial — build & randomize a world
 
 A 5-minute guide to generating a complete, randomized outdoor world (terrain →
 ground → trees/rocks) and rendering it on the GPU. Everything is **seeded**: the
 same `--seed` reproduces the same world; change it for a new one.
 
-> All commands run inside the `forest3d:egl` Docker image (Forest3D + Blender 4.2 +
+> All commands run inside the `wildseed:egl` Docker image (WildSeed + Blender 4.2 +
 > Gazebo Harmonic + GDAL + NVIDIA EGL). To pick up local `src/` edits, add
 > `-e PYTHONPATH=/workspace/src`.
 
@@ -24,20 +24,20 @@ Each step writes into `models/` (and the last into `worlds/`); each is one CLI c
 ```bash
 docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
   -e PYTHONPATH=/workspace/src -e GZ_SIM_RESOURCE_PATH=/workspace/models \
-  -v "$PWD:/workspace" --entrypoint bash forest3d:egl -c '
+  -v "$PWD:/workspace" --entrypoint bash wildseed:egl -c '
   cd /workspace
   # 1) synthesize a landform (writes dem/synth.tif)
-  forest3d terraingen --preset hilly --seed 7 --size 192 -o dem/synth.tif
+  wildseed terraingen --preset hilly --seed 7 --size 192 -o dem/synth.tif
   # 2) mesh it (writes models/ground)
-  forest3d terrain --dem dem/synth.tif
+  wildseed terrain --dem dem/synth.tif
   # 3) texture the ground (seeded patchy composite: grass + sand/gravel patches + trail)
-  forest3d ground --mode patchy --biome grassland --seed 7
+  wildseed ground --mode patchy --biome grassland --seed 7
   # 4) place trees/rocks (writes worlds/forest_world.world)
-  forest3d generate --density "{\"tree\":40,\"rock\":12,\"bush\":0}" --seed 7
+  wildseed generate --density "{\"tree\":40,\"rock\":12,\"bush\":0}" --seed 7
 '
 ```
 
-`forest3d --help` (and `<cmd> --help`) lists every flag. The terrain knobs are in
+`wildseed --help` (and `<cmd> --help`) lists every flag. The terrain knobs are in
 `docs/TERRAIN_GENERATOR.md`.
 
 ## 2. Render it (GPU)
@@ -47,7 +47,7 @@ The repo ships a small render harness:
 ```bash
 docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
   -e PYTHONPATH=/workspace/src -e GZ_SIM_RESOURCE_PATH=/workspace/models \
-  -v "$PWD:/workspace" --entrypoint bash forest3d:egl -c '
+  -v "$PWD:/workspace" --entrypoint bash wildseed:egl -c '
   cd /workspace
   FOREST=1 python3 tools/terrain_scene.py            # build a world w/ oblique + top-down cameras
   gz sim -s -r --headless-rendering worlds/terrain_scene.world > frames/gz.log 2>&1 &
@@ -76,10 +76,10 @@ to perturb just that aspect. A loop over seeds gives a batch of distinct worlds:
 
 ```bash
 for S in 1 2 3 4 5; do
-  forest3d terraingen --preset hilly --seed $S -o dem/synth.tif
-  forest3d terrain    --dem dem/synth.tif
-  forest3d ground     --mode patchy --biome grassland --seed $S
-  forest3d generate   --density "{\"tree\":40,\"rock\":12}" --seed $S -o worlds/world_$S.world
+  wildseed terraingen --preset hilly --seed $S -o dem/synth.tif
+  wildseed terrain    --dem dem/synth.tif
+  wildseed ground     --mode patchy --biome grassland --seed $S
+  wildseed generate   --density "{\"tree\":40,\"rock\":12}" --seed $S -o worlds/world_$S.world
 done
 ```
 
@@ -97,9 +97,9 @@ Other things to vary:
 
 ```bash
 # one global plane (simple; floods everything below the level):
-forest3d ground --mode patchy --biome grassland --water-level 5.5
+wildseed ground --mode patchy --biome grassland --water-level 5.5
 # OR one plane per basin at its own level (recommended for multiple lakes):
-forest3d ground --mode patchy --biome grassland --auto-water --dem dem/synth.tif
+wildseed ground --mode patchy --biome grassland --auto-water --dem dem/synth.tif
 ```
 
 The render harness (`FOREST=1 ... terrain_scene.py`) includes every `water*` model

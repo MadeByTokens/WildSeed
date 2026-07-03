@@ -1,4 +1,4 @@
-# Frozen Python dependency versions — the exact set that works in forest3d:egl.
+# Frozen Python dependency versions — the exact set that works in wildseed:egl.
 # Captured from the working image on 2026-06-28 (Python 3.10.12, Ubuntu 22.04).
 #
 # Used by docker/Dockerfile via `pip install -c docker/constraints.txt` so a rebuild
@@ -6,7 +6,7 @@
 # bump a pin, rebuild, verify the demos still render, commit.
 #
 # numpy is the load-bearing one: the system GDAL (osgeo) is built against the NumPy 1.x
-# C-ABI, so numpy>=2 breaks `forest3d terrain` with "_ARRAY_API not found".
+# C-ABI, so numpy>=2 breaks `wildseed terrain` with "_ARRAY_API not found".
 
 # direct deps (mirror pyproject.toml)
 numpy==1.26.4

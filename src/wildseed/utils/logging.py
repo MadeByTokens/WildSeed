@@ -1,4 +1,4 @@
-"""Logging configuration for Forest3D."""
+"""Logging configuration for WildSeed."""
 
 import logging
 import sys
@@ -23,7 +23,7 @@ def setup_logging(
     Returns:
         Configured logger instance.
     """
-    logger = logging.getLogger("forest3d")
+    logger = logging.getLogger("wildseed")
     logger.setLevel(getattr(logging, level.upper()))
 
     # Clear existing handlers
@@ -55,7 +55,7 @@ def setup_logging(
     return logger
 
 
-def get_logger(name: str = "forest3d") -> logging.Logger:
+def get_logger(name: str = "wildseed") -> logging.Logger:
     """Get a logger instance.
 
     Args:

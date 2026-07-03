@@ -1,6 +1,6 @@
-"""Seeded procedural ground compositor for Forest3D terrain.
+"""Seeded procedural ground compositor for WildSeed terrain.
 
-Reproduces the original Forest3D look (single PBR material from a ground texture,
+Reproduces the original WildSeed look (single PBR material from a ground texture,
 the Soil 1/2/3 approach) AND extends it with controllable patchiness the original
 lacks: trails (explicit waypoints or seeded random walk) and scattered sand /
 gravel / pebble patches. Output is one PBR material set (albedo/normal/roughness),

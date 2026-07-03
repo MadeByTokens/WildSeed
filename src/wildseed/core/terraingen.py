@@ -1,7 +1,7 @@
-"""Seeded procedural terrain (DEM) synthesizer for Forest3D.
+"""Seeded procedural terrain (DEM) synthesizer for WildSeed.
 
 Synthesizes a heightfield and writes it as a GeoTIFF so it can be fed to the
-existing, proven ``forest3d terrain --dem <synth.tif>`` pipeline **unchanged** --
+existing, proven ``wildseed terrain --dem <synth.tif>`` pipeline **unchanged** --
 the mesh, UVs, ground compositor, water plane and seeded placement all already
 work on any DEM. This is the last missing piece of the "randomize a whole
 scenario for VIO/lidar testing" goal: the same ``seed`` gives the same landform,
@@ -36,7 +36,7 @@ try:
 except ImportError:
     GDAL_AVAILABLE = False
 
-logger = logging.getLogger("forest3d.terraingen")
+logger = logging.getLogger("wildseed.terraingen")
 
 
 # --------------------------------------------------------------------------- #

@@ -1,9 +1,9 @@
-# Derived image: Forest3D + NVIDIA EGL vendor ICD so headless ogre2 renders on the
+# Derived image: WildSeed + NVIDIA EGL vendor ICD so headless ogre2 renders on the
 # GPU instead of silently falling back to llvmpipe (software). See SPIKE_BRIEF.md §5
 # and AutonomyTests docs/sim-debugging-notes.md #8.
-# Build: docker build -t forest3d:egl -f docker/Dockerfile.egl .
-#   (to build on a specific base: --build-arg BASE=forest3d:repro-test)
-ARG BASE=forest3d
+# Build: docker build -t wildseed:egl -f docker/Dockerfile.egl .
+#   (to build on a specific base: --build-arg BASE=wildseed:repro-test)
+ARG BASE=wildseed
 FROM ${BASE}
 USER root
 # Fix 1: NVIDIA EGL vendor ICD (GPU render, see above).
@@ -22,4 +22,4 @@ RUN pip3 install --no-cache-dir 'Pillow==12.2.0'
 # DEMO_REALISM_V2 — ORB/FAST, spatial coverage, tiling autocorrelation). Headless variant
 # pulls no GUI/X11 libs. Pinned to match the host cv2 used to develop the harness.
 RUN pip3 install --no-cache-dir 'opencv-python-headless==4.11.0.86'
-USER forest3d
+USER wildseed

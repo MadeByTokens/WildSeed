@@ -4,8 +4,8 @@ import click
 from pathlib import Path
 from rich.progress import Progress, BarColumn, TaskProgressColumn, TextColumn
 
-from forest3d.config.loader import load_config
-from forest3d.core.converter import AssetExporter
+from wildseed.config.loader import load_config
+from wildseed.core.converter import AssetExporter
 
 # Known asset categories
 KNOWN_CATEGORIES = ["tree", "bush", "rock", "grass", "sand"]
@@ -43,13 +43,13 @@ def convert(ctx, input_dir, output_dir, blender_path, category):
     \b
     Examples:
         # Auto-detect categories from subfolders (tree/, rock/, bush/, etc.)
-        forest3d convert -i ./Blender-Assets -o ./models
+        wildseed convert -i ./Blender-Assets -o ./models
 
         # Convert specific category
-        forest3d convert -i ./Blender-Assets/tree -o ./models -c tree
+        wildseed convert -i ./Blender-Assets/tree -o ./models -c tree
 
         # Custom Blender path
-        forest3d convert -i ./assets -o ./models --blender /opt/blender/blender
+        wildseed convert -i ./assets -o ./models --blender /opt/blender/blender
 
     \b
     Note: Requires Blender 4.2+ to be installed.

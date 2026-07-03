@@ -1,6 +1,6 @@
-# Forest3D realism conversion profile
+# WildSeed realism conversion profile
 #
-# Use with: forest3d -c configs/realism.yaml convert -i Blender-Assets -o models
+# Use with: wildseed -c configs/realism.yaml convert -i Blender-Assets -o models
 #
 # Tuned for photoreal downloaded assets (high-poly meshes, PBR + alpha foliage).
 # Each category overrides the global decimation/collision defaults; categories not

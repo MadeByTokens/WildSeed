@@ -16,7 +16,7 @@ import os
 import sys
 import urllib.request
 
-UA = {"User-Agent": "Mozilla/5.0 (Forest3D asset fetch; CC0)"}
+UA = {"User-Agent": "Mozilla/5.0 (WildSeed asset fetch; CC0)"}
 
 
 def _get(url, dest=None, timeout=180):

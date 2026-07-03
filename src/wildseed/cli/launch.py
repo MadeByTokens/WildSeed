@@ -6,7 +6,7 @@ import subprocess
 import click
 from pathlib import Path
 
-from forest3d.config.loader import load_config
+from wildseed.config.loader import load_config
 
 
 def find_gazebo() -> tuple[str, str]:
@@ -50,9 +50,9 @@ def launch(ctx, world_path, base_path, verbose):
 
     \b
     Examples:
-        forest3d launch
-        forest3d launch --world worlds/custom.world
-        forest3d launch -b ./my-project
+        wildseed launch
+        wildseed launch --world worlds/custom.world
+        wildseed launch -b ./my-project
 
     \b
     Requirements:
@@ -64,7 +64,7 @@ def launch(ctx, world_path, base_path, verbose):
         docker run -e DISPLAY=$DISPLAY \\
                    -v /tmp/.X11-unix:/tmp/.X11-unix \\
                    -v $(pwd):/workspace \\
-                   forest3d launch
+                   wildseed launch
     """
     console = ctx.obj["console"]
     logger = ctx.obj["logger"]
@@ -79,7 +79,7 @@ def launch(ctx, world_path, base_path, verbose):
             "  sudo apt install gz-harmonic\n\n"
             "Or use Docker:\n"
             "  docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \\\n"
-            "             -v $(pwd):/workspace forest3d launch"
+            "             -v $(pwd):/workspace wildseed launch"
         )
 
     # Determine paths
@@ -99,7 +99,7 @@ def launch(ctx, world_path, base_path, verbose):
             raise click.ClickException(
                 f"World file not found: {world_file}\n\n"
                 "Generate a world first:\n"
-                "  forest3d generate"
+                "  wildseed generate"
             )
 
     console.print(f"[bold]Launching Gazebo {gz_version.title()}[/bold]")

@@ -1,11 +1,11 @@
-"""Procedural ground material compositor for Forest3D terrain.
+"""Procedural ground material compositor for WildSeed terrain.
 
 Generates the terrain's PBR ground material (albedo / normal / roughness) either as
 a crisp tiled single texture (``uniform``) or as a seeded baked composite
 (``patchy``) that blends a base with overlay layers -- organic patches of
 sand/gravel/pebbles/rock and trails (explicit waypoints or seeded random walk).
 
-This is a superset of the original Forest3D terrain texturing (single PBR material
+This is a superset of the original WildSeed terrain texturing (single PBR material
 from a soil.blend): same render path, plus controllable, *reproducible* variation
 for randomized VIO / lidar test scenarios. Everything is driven by a seed, so the
 same seed yields the same ground and a new seed yields a new scenario.
@@ -23,7 +23,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 from scipy.ndimage import gaussian_filter, zoom
 
-logger = logging.getLogger("forest3d.ground")
+logger = logging.getLogger("wildseed.ground")
 
 
 # --------------------------------------------------------------------------- #

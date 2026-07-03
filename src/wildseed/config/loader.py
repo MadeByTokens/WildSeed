@@ -6,14 +6,14 @@ from typing import Optional
 
 import yaml
 
-from forest3d.config.schema import Forest3DConfig
+from wildseed.config.schema import WildSeedConfig
 
 
 CONFIG_SEARCH_PATHS = [
-    Path.cwd() / "forest3d.yaml",
-    Path.cwd() / ".forest3d.yaml",
-    Path.home() / ".config" / "forest3d" / "config.yaml",
-    Path.home() / ".forest3d.yaml",
+    Path.cwd() / "wildseed.yaml",
+    Path.cwd() / ".wildseed.yaml",
+    Path.home() / ".config" / "wildseed" / "config.yaml",
+    Path.home() / ".wildseed.yaml",
 ]
 
 
@@ -29,11 +29,11 @@ def find_config_file() -> Optional[Path]:
     return None
 
 
-def load_config(config_path: Optional[Path] = None) -> Forest3DConfig:
+def load_config(config_path: Optional[Path] = None) -> WildSeedConfig:
     """Load configuration with cascading defaults.
 
     Priority (highest to lowest):
-    1. Environment variables (FOREST3D_*)
+    1. Environment variables (WILDSEED_*)
     2. Explicit config file path
     3. Auto-discovered config file
     4. Built-in defaults
@@ -42,7 +42,7 @@ def load_config(config_path: Optional[Path] = None) -> Forest3DConfig:
         config_path: Optional path to configuration file.
 
     Returns:
-        Validated Forest3DConfig instance.
+        Validated WildSeedConfig instance.
     """
     config_dict: dict = {}
 
@@ -58,19 +58,19 @@ def load_config(config_path: Optional[Path] = None) -> Forest3DConfig:
             config_dict = yaml.safe_load(f) or {}
 
     # Environment variable overrides
-    if env_blender := os.environ.get("FOREST3D_BLENDER_PATH"):
+    if env_blender := os.environ.get("WILDSEED_BLENDER_PATH"):
         config_dict.setdefault("blender", {})["path"] = env_blender
 
-    if env_base := os.environ.get("FOREST3D_BASE_PATH"):
+    if env_base := os.environ.get("WILDSEED_BASE_PATH"):
         config_dict.setdefault("paths", {})["base_path"] = env_base
 
-    if env_models := os.environ.get("FOREST3D_MODELS_PATH"):
+    if env_models := os.environ.get("WILDSEED_MODELS_PATH"):
         config_dict.setdefault("paths", {})["models_path"] = env_models
 
-    return Forest3DConfig(**config_dict)
+    return WildSeedConfig(**config_dict)
 
 
-def save_config(config: Forest3DConfig, path: Path) -> None:
+def save_config(config: WildSeedConfig, path: Path) -> None:
     """Save configuration to a YAML file.
 
     Args:

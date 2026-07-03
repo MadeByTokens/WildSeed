@@ -4,7 +4,7 @@ import click
 from pathlib import Path
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from forest3d.config.loader import load_config
+from wildseed.config.loader import load_config
 
 # Default output location
 DEFAULT_OUTPUT = "./models/ground"
@@ -62,7 +62,7 @@ def terrain(ctx, dem_path, output_path, scale, smooth, enhance, texture_path, bl
         --uv-tile    Texture tiling repetition (default: 10.0)
     \b
     Recommended folder structure:
-        Forest3D/
+        WildSeed/
         ├── DEM/                      <- DEM files (geographic data)
         │   └── terrain.tif
         ├── Blender-Assets/
@@ -75,13 +75,13 @@ def terrain(ctx, dem_path, output_path, scale, smooth, enhance, texture_path, bl
     \b
     Examples:
         # Basic terrain from DEM
-        forest3d terrain --dem ./DEM/terrain.tif
+        wildseed terrain --dem ./DEM/terrain.tif
 
         # With soil texture
-        forest3d terrain --dem ./DEM/terrain.tif --texture ./Blender-Assets/soil/soil.blend
+        wildseed terrain --dem ./DEM/terrain.tif --texture ./Blender-Assets/soil/soil.blend
 
         # Custom options
-        forest3d terrain -d ./DEM/terrain.tif -t ./Blender-Assets/soil/soil.blend --scale 2.0 --smooth 1.5
+        wildseed terrain -d ./DEM/terrain.tif -t ./Blender-Assets/soil/soil.blend --scale 2.0 --smooth 1.5
 
     \b
     Note: This command requires GDAL to be installed. Use Docker for
@@ -120,13 +120,13 @@ def terrain(ctx, dem_path, output_path, scale, smooth, enhance, texture_path, bl
 
         try:
             # Import here to give helpful error if GDAL missing
-            from forest3d.core.terrain import TerrainGenerator, GDAL_AVAILABLE
+            from wildseed.core.terrain import TerrainGenerator, GDAL_AVAILABLE
 
             if not GDAL_AVAILABLE:
                 raise click.ClickException(
                     "GDAL is required for terrain generation.\n\n"
                     "Install options:\n"
-                    "  1. Use Docker: docker run -v $(pwd):/workspace forest3d terrain ...\n"
+                    "  1. Use Docker: docker run -v $(pwd):/workspace wildseed terrain ...\n"
                     "  2. Ubuntu/Debian: sudo apt install python3-gdal gdal-bin\n"
                     "  3. See documentation for other platforms"
                 )

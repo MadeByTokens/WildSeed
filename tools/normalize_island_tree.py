@@ -1,4 +1,4 @@
-"""Normalize Poly Haven island_tree_01 into a Forest3D-ready hero asset.
+"""Normalize Poly Haven island_tree_01 into a WildSeed-ready hero asset.
 
 Poly Haven tree blends ship multiple LODs + kit source pieces in one file, and
 wire foliage through a custom node GROUP the glTF exporter can't read. This script:

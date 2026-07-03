@@ -3,20 +3,20 @@ requires = ["setuptools>=64.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "forest3d"
-version = "0.1.0"
-description = "Terrain generation and environmental modeling toolkit for Gazebo robotics simulation"
+name = "wildseed"
+version = "0.2.0"
+description = "Reproducible wilderness for robot perception — seeded, randomized Gazebo worlds for VIO/LIO benchmarking"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "AGPL-3.0"}
 requires-python = ">=3.8"
 authors = [
-    {name = "AI4Forest", email = "khalid.bourr@gmail.com"}
+    {name = "Ricardo de Azambuja"}
 ]
-keywords = ["gazebo", "robotics", "simulation", "terrain", "forest", "dem", "3d", "ros"]
+keywords = ["gazebo", "robotics", "simulation", "terrain", "forest", "dem", "3d", "ros", "vio", "lio", "slam", "benchmark", "procedural"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -54,19 +54,19 @@ dev = [
 ]
 
 [project.scripts]
-forest3d = "forest3d.cli.main:main"
+wildseed = "wildseed.cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/khalidbourr/Forest3D"
-Documentation = "https://github.com/khalidbourr/Forest3D#readme"
-Repository = "https://github.com/khalidbourr/Forest3D.git"
-Issues = "https://github.com/khalidbourr/Forest3D/issues"
+Homepage = "https://github.com/ricardodeazambuja/WildSeed"
+Documentation = "https://github.com/ricardodeazambuja/WildSeed#readme"
+Repository = "https://github.com/ricardodeazambuja/WildSeed.git"
+Issues = "https://github.com/ricardodeazambuja/WildSeed/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-forest3d = ["py.typed"]
+wildseed = ["py.typed"]
 
 [tool.black]
 line-length = 100
@@ -78,7 +78,7 @@ disable = ["C0114", "C0115", "C0116"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
-addopts = "-v --cov=forest3d --cov-report=term-missing"
+addopts = "-v --cov=wildseed --cov-report=term-missing"
 
 [tool.mypy]
 python_version = "3.8"

@@ -1,11 +1,11 @@
-# Forest3D demo asset manifest — the single source of truth for the reproducible
+# WildSeed demo asset manifest — the single source of truth for the reproducible
 # demo asset set. Every asset is CC0 from Poly Haven (credential-free public API), so
-# `forest3d assets fetch` (tools/build_assets.py) reproduces the exact set inside the
+# `wildseed assets fetch` (tools/build_assets.py) reproduces the exact set inside the
 # Docker image with NO account/login. Run it to (re)build models/ from scratch.
 #
 # Per asset:
 #   id       Poly Haven asset id (https://polyhaven.com/a/<id>)
-#   category tree | rock | bush | grass   (Forest3D placement category)
+#   category tree | rock | bush | grass   (WildSeed placement category)
 #   res      texture resolution to fetch (1k/2k/4k) — smaller = lighter worlds
 #   lod      Poly Haven LOD level to keep (0=highest detail/heaviest; '-'=auto/highest)
 #   scale    extra uniform scale applied at normalize (real-world size tweak)

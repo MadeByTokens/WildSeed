@@ -1,5 +1,5 @@
-"""Generate simple procedural CC0 vegetation .blend assets for Forest3D.
-Run in the Forest3D container's Blender:
+"""Generate simple procedural CC0 vegetation .blend assets for WildSeed.
+Run in the WildSeed container's Blender:
   blender --background --python make_assets.py -- <which>
 where <which> is 'tree', 'all', or a comma list (tree,rock,bush).
 Each asset: fresh empty scene -> meshes with Principled-BSDF Base Color (glTF reads

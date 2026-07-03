@@ -3,7 +3,7 @@
 import click
 from pathlib import Path
 
-from forest3d.config.schema import TerrainGenConfig, PRESET_NAMES
+from wildseed.config.schema import TerrainGenConfig, PRESET_NAMES
 
 DEFAULT_OUT = "./dem/synth.tif"
 
@@ -38,15 +38,15 @@ def terraingen(ctx, preset, seed, resolution, pixel_m, out_path, amplitude_m, ro
     """Synthesize a seeded procedural terrain as a GeoTIFF DEM.
 
     The output feeds the existing pipeline unchanged:
-    ``forest3d terrain --dem <out>`` then ``ground`` / ``generate``.
+    ``wildseed terrain --dem <out>`` then ``ground`` / ``generate``.
 
     \b
     Examples:
-        forest3d terraingen --preset hilly --seed 7 --size 192 -o dem/synth.tif
-        forest3d terraingen --preset lakeland --seed 7 -o dem/lake.tif
-        forest3d terraingen --preset mountainous --seed 3 --amplitude 100
+        wildseed terraingen --preset hilly --seed 7 --size 192 -o dem/synth.tif
+        wildseed terraingen --preset lakeland --seed 7 -o dem/lake.tif
+        wildseed terraingen --preset mountainous --seed 3 --amplitude 100
         # smooth surface, SAME hill pattern (tame the "spongy" look):
-        forest3d terraingen --preset hilly --seed 7 --detail 0.2
+        wildseed terraingen --preset hilly --seed 7 --detail 0.2
     """
     console = ctx.obj["console"]
 
@@ -65,11 +65,11 @@ def terraingen(ctx, preset, seed, resolution, pixel_m, out_path, amplitude_m, ro
                   f"seed=[cyan]{cfg.seed}[/cyan] size=[cyan]{cfg.resolution}[/cyan]")
 
     try:
-        from forest3d.core.terraingen import synthesize_dem, GDAL_AVAILABLE
+        from wildseed.core.terraingen import synthesize_dem, GDAL_AVAILABLE
         if not GDAL_AVAILABLE:
             raise click.ClickException(
                 "GDAL is required for terrain synthesis.\n"
-                "  Use Docker (forest3d:egl) or: sudo apt install python3-gdal gdal-bin"
+                "  Use Docker (wildseed:egl) or: sudo apt install python3-gdal gdal-bin"
             )
         info = synthesize_dem(cfg, Path(out_path))
     except ImportError as e:
@@ -85,5 +85,5 @@ def terraingen(ctx, preset, seed, resolution, pixel_m, out_path, amplitude_m, ro
                           f"suggested --water-level [bold]{lk['suggested_water_level']}[/bold]  "
                           f"center_xy={lk['center_xy_m']} r={lk['radius_m']} m")
         rec = min(lk["suggested_water_level"] for lk in info["lakes"])
-        console.print(f"  [dim]single global plane: forest3d ground ... --water-level {rec}[/dim]")
-    console.print(f"[dim]Next: forest3d terrain --dem {info['out']}[/dim]")
+        console.print(f"  [dim]single global plane: wildseed ground ... --water-level {rec}[/dim]")
+    console.print(f"[dim]Next: wildseed terrain --dem {info['out']}[/dim]")

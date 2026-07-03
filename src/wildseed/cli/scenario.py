@@ -3,8 +3,8 @@
 import click
 from pathlib import Path
 
-from forest3d.config.schema import PRESET_NAMES
-from forest3d.core.scenario import BIOME_NAMES, resolve_scenario
+from wildseed.config.schema import PRESET_NAMES
+from wildseed.core.scenario import BIOME_NAMES, resolve_scenario
 
 
 @click.command()
@@ -39,10 +39,10 @@ def scenario(ctx, seed, biome, preset, density_scale, size, pixel_m, manifest,
 
     \b
     Examples:
-        forest3d scenario --seed 42                      # fully random, reproducible
-        forest3d scenario --seed 42 --biome alpine       # fix the biome, randomize the rest
-        forest3d scenario --seed 7 --density-scale 1.5   # denser variant of seed 7
-        forest3d scenario --seed 7 --dry-run             # inspect without building
+        wildseed scenario --seed 42                      # fully random, reproducible
+        wildseed scenario --seed 42 --biome alpine       # fix the biome, randomize the rest
+        wildseed scenario --seed 7 --density-scale 1.5   # denser variant of seed 7
+        wildseed scenario --seed 7 --dry-run             # inspect without building
     """
     console = ctx.obj["console"]
 
@@ -61,12 +61,12 @@ def scenario(ctx, seed, biome, preset, density_scale, size, pixel_m, manifest,
         return
 
     try:
-        from forest3d.core.terraingen import GDAL_AVAILABLE
+        from wildseed.core.terraingen import GDAL_AVAILABLE
         if not GDAL_AVAILABLE:
             raise click.ClickException(
-                "GDAL is required (use the forest3d Docker image, or "
+                "GDAL is required (use the wildseed Docker image, or "
                 "`sudo apt install python3-gdal gdal-bin`).")
-        from forest3d.core.scenario import run_scenario
+        from wildseed.core.scenario import run_scenario
         result = run_scenario(spec, base_path=Path(base_path),
                               manifest_path=Path(manifest))
     except (ImportError, FileNotFoundError, KeyError, ValueError) as e:
@@ -78,4 +78,4 @@ def scenario(ctx, seed, biome, preset, density_scale, size, pixel_m, manifest,
     console.print(f"  models placed: {stats['total_models']} "
                   f"{ {k: v for k, v in stats['by_category'].items() if v} }"
                   + (f"  lakes: {result['lakes']}" if result["lakes"] else ""))
-    console.print(f"[dim]Launch: forest3d launch --world {result['world']}[/dim]")
+    console.print(f"[dim]Launch: wildseed launch --world {result['world']}[/dim]")

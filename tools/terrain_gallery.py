@@ -1,5 +1,5 @@
 """Render a seeded gallery of terraingen presets through the full pipeline and
-compose one PNG. Runs inside forest3d:egl with --gpus all.
+compose one PNG. Runs inside wildseed:egl with --gpus all.
 
 For each preset: terraingen -> terrain (mesh) -> ground (uniform) ->
 [water plane for lakeland, at the sidecar's suggested level] -> render oblique
@@ -13,7 +13,7 @@ import time
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-CLI = ["python3", "-m", "forest3d.cli.main"]
+CLI = ["python3", "-m", "wildseed.cli.main"]
 SEED = 7
 PRESETS = ["flat", "hilly", "valley", "mountainous", "lakeland"]
 

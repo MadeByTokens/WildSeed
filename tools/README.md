@@ -1,15 +1,15 @@
 # `tools/` — dev/build tooling for the reproducible demos
 
-These are **standalone scripts**, not part of the installed `forest3d` package (the library in
+These are **standalone scripts**, not part of the installed `wildseed` package (the library in
 `src/` does not import anything here). They build the CC0 demo asset set, render the 6 demo
 scenarios, and measure realism against the reference screenshots. Most render steps need the
-GPU `forest3d:egl` image — see the repo `README.md` → *Gotchas, best practices & caveats*.
+GPU `wildseed:egl` image — see the repo `README.md` → *Gotchas, best practices & caveats*.
 
 Run from the repo root, inside the container, e.g.:
 
 ```bash
 docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all -e PYTHONPATH=/workspace/src \
-  -v "$PWD:/workspace" --entrypoint bash forest3d:egl -c 'cd /workspace && python3 tools/build_scenarios.py'
+  -v "$PWD:/workspace" --entrypoint bash wildseed:egl -c 'cd /workspace && python3 tools/build_scenarios.py'
 ```
 
 ## Core demo pipeline (the path that produces the galleries)
@@ -31,7 +31,7 @@ docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all -e PYTHONPATH=/work
 | `compare.py` | Image-level metric harness: ORB/FAST per-MP, 8×8 coverage, tiling autocorrelation, vs the 3 reference screenshots. Emits `compare.png` + a markdown table. Needs `opencv-python-headless` (in `:egl`). |
 | `quickmetric.py` | Fast single-scene readout (`python3 tools/quickmetric.py savanna_flats`). |
 | `regen_galleries.py` | Rebuilds the 6-panel `scenarios_gallery.png` / `scenarios_overview.png` from frames on disk — use after a single-scene `FOREST_SCN=` build. |
-| `scenario_gallery.py` | Builds + renders N `forest3d scenario --seed` worlds (default 101/107/108) → `scenario_seeds_gallery.png`, the master-seed diversity proof. |
+| `scenario_gallery.py` | Builds + renders N `wildseed scenario --seed` worlds (default 101/107/108) → `scenario_seeds_gallery.png`, the master-seed diversity proof. |
 
 ## Catalog & diagnostics
 

@@ -16,7 +16,7 @@ T = TypeVar("T")
 
 
 def create_progress_bar(console: Optional[Console] = None) -> Progress:
-    """Create a standard progress bar for Forest3D operations.
+    """Create a standard progress bar for WildSeed operations.
 
     Args:
         console: Optional Rich console for output.
