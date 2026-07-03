@@ -115,6 +115,12 @@ class WorldPopulator:
             "grass": [],
             "sand": [],
         }
+        # Full per-instance ground truth (model id, pose, scale) — exported next
+        # to the world file so perception evaluations can associate sensor
+        # returns with the exact object that produced them (idea from
+        # CropCraft's field_description output).
+        self.instances: List[Dict] = []
+        self._name_counters: Dict[str, int] = {}
 
         self._verify_paths()
         self.model_variants = self._get_model_variants()
@@ -186,6 +192,105 @@ class WorldPopulator:
         if not mesh_path.exists():
             raise FileNotFoundError(f"Terrain mesh not found at: {mesh_path}")
         return mesh.Mesh.from_file(str(mesh_path))
+
+    def _add_instance(self, world: ET.Element, category: str, variant: str,
+                      x: float, y: float, z: float,
+                      roll: float, pitch: float, yaw: float, scale: float) -> str:
+        """Append one model include to the world AND record its ground truth."""
+        idx = self._name_counters.get(category, 0)
+        self._name_counters[category] = idx + 1
+        name = f"{category}_{idx}"
+        include = ET.SubElement(world, "include")
+        ET.SubElement(include, "uri").text = f"model://{category}/{variant}"
+        ET.SubElement(include, "name").text = name
+        ET.SubElement(include, "pose").text = (
+            f"{x:.4f} {y:.4f} {z:.4f} {roll:.4f} {pitch:.4f} {yaw:.4f}")
+        ET.SubElement(include, "scale").text = f"{scale:.3f} {scale:.3f} {scale:.3f}"
+        # float()/str() casts: rng draws are numpy scalars, which round()
+        # preserves and json.dumps rejects.
+        self.instances.append({
+            "name": name, "category": category, "model": str(variant),
+            "pose": {"x": round(float(x), 4), "y": round(float(y), 4),
+                     "z": round(float(z), 4), "roll": round(float(roll), 4),
+                     "pitch": round(float(pitch), 4), "yaw": round(float(yaw), 4)},
+            "scale": round(float(scale), 3),
+        })
+        return name
+
+    def _place_rows(self, world: ET.Element, terrain_mesh: mesh.Mesh,
+                    category: str, spec: Dict) -> int:
+        """Structured row planting (orchards, vineyards, plantations).
+
+        Inspired by CropCraft's bed engine (Apache-2.0, INRAE): regular rows
+        with per-plant lateral jitter, tilt noise, missing-plant dropout and
+        aligned/random yaw — adapted to WildSeed's terrain (rows follow the
+        DEM height, the planted block is bounded by `field_size` and can be
+        rotated by `angle`; an optional sine wave bends the rows).
+
+        Spec keys (all optional): row_distance, plant_distance, field_size,
+        angle, jitter, tilt, missing, yaw ('aligned'|'random'), wave_amplitude,
+        wave_length, scale_range [lo, hi], margin.
+        """
+        import math
+
+        bounds = terrain_mesh.vectors.reshape(-1, 3)
+        min_x, max_x = float(bounds[:, 0].min()), float(bounds[:, 0].max())
+        min_y, max_y = float(bounds[:, 1].min()), float(bounds[:, 1].max())
+        cx, cy = (min_x + max_x) / 2.0, (min_y + max_y) / 2.0
+
+        margin = float(spec.get("margin", 4.0))
+        row_d = max(0.5, float(spec.get("row_distance", 6.0)))
+        plant_d = max(0.3, float(spec.get("plant_distance", 4.0)))
+        angle = float(spec.get("angle", 0.0))
+        jitter = float(spec.get("jitter", 0.15))
+        tilt = float(spec.get("tilt", 0.03))
+        missing = float(spec.get("missing", 0.08))
+        yaw_mode = spec.get("yaw", "aligned")
+        wave_amp = float(spec.get("wave_amplitude", 0.0))
+        wave_len = max(1.0, float(spec.get("wave_length", 40.0)))
+        cat_lo, cat_hi = self.SCALE_RANGES.get(category, (0.8, 1.2))
+        # Plantations are size-uniform: default to the middle third of the
+        # category's natural scale range.
+        span = cat_hi - cat_lo
+        lo, hi = spec.get("scale_range", (cat_lo + span / 3.0, cat_hi - span / 3.0))
+
+        usable = min(max_x - min_x, max_y - min_y) - 2 * margin
+        field = min(float(spec.get("field_size", 90.0)), usable)
+        half = field / 2.0
+        ca, sa = math.cos(angle), math.sin(angle)
+
+        placed = 0
+        n_rows = int(field // row_d)
+        n_plants = int(field // plant_d)
+        for vi in range(n_rows + 1):
+            v0 = -half + vi * row_d
+            for ui in range(n_plants + 1):
+                u = -half + ui * plant_d
+                if self.rng.random() < missing:
+                    continue
+                v = v0 + wave_amp * math.sin(2 * math.pi * u / wave_len)
+                x = cx + u * ca - v * sa + self.rng.normal(0.0, jitter)
+                y = cy + u * sa + v * ca + self.rng.normal(0.0, jitter)
+                if not (min_x + margin <= x <= max_x - margin
+                        and min_y + margin <= y <= max_y - margin):
+                    continue
+                variant = self._get_random_variant(category)
+                if not variant:
+                    return placed
+                scale = float(self.rng.uniform(lo, hi))
+                z = self._sample_terrain_height(terrain_mesh, x, y) \
+                    + self.rng.uniform(-0.05, 0.02)
+                roll = self.rng.normal(0.0, tilt)
+                pitch = self.rng.normal(0.0, tilt)
+                if yaw_mode == "aligned":
+                    yaw = angle + self.rng.normal(0.0, 0.08)
+                else:
+                    yaw = self.rng.uniform(0, 2 * np.pi)
+                self._add_instance(world, category, variant, x, y, z,
+                                   roll, pitch, yaw, scale)
+                self.placed_models[category].append((x, y, z, scale))
+                placed += 1
+        return placed
 
     def _get_random_variant(self, category: str) -> Optional[str]:
         """Get random variant for category."""
@@ -476,15 +581,21 @@ class WorldPopulator:
     def create_forest_world(
             self,
             density_config: Optional[Dict[str, int]] = None,
+            rows_config: Optional[Dict[str, Dict]] = None,
     ) -> Path:
         """Create forest world with placed models.
 
         Args:
             density_config: Dict of category -> count. Uses defaults if None.
+            rows_config: Optional dict of category -> row spec (see _place_rows).
+                A category with a row spec is planted in structured rows and
+                skipped by the density scatter.
 
         Returns:
             Path to created world file.
         """
+        import json
+
         from wildseed.utils.sdf import create_world_base, write_world_file
 
         if self.seed is not None:
@@ -494,6 +605,9 @@ class WorldPopulator:
         # Reset placed models
         for category in self.placed_models:
             self.placed_models[category] = []
+        self.instances = []
+        self._name_counters = {}
+        rows_config = rows_config or {}
 
         # Use provided config or defaults
         if density_config is None:
@@ -523,6 +637,15 @@ class WorldPopulator:
 
         terrain_mesh = self._get_terrain_mesh()
 
+        # Structured rows go FIRST so the scatter pass keeps its distance from
+        # the planted rows (cross-category minimums see them in placed_models).
+        for category, spec in rows_config.items():
+            if category not in self.model_variants or not self.model_variants.get(category):
+                logger.warning(f"rows: no models available for {category}; skipping")
+                continue
+            n = self._place_rows(world, terrain_mesh, category, spec or {})
+            logger.info(f"  {category}: planted {n} in rows")
+
         # Process categories in specific order (larger/important first)
         category_order = ["sand", "rock", "tree", "bush", "grass"]
         total_models = sum(density_config.get(c, 0) for c in category_order)
@@ -530,6 +653,8 @@ class WorldPopulator:
         models_failed = 0
 
         for category in category_order:
+            if category in rows_config:
+                continue  # planted in rows above
             if category not in density_config or category not in self.model_variants:
                 continue
 
@@ -584,12 +709,8 @@ class WorldPopulator:
                         roll = pitch = 0
                         yaw = self.rng.uniform(0, 2 * np.pi)
 
-                    # Add model to world
-                    include = ET.SubElement(world, "include")
-                    ET.SubElement(include, "uri").text = f"model://{category}/{variant}"
-                    ET.SubElement(include, "name").text = f"{category}_{i}"
-                    ET.SubElement(include, "pose").text = f"{x:.4f} {y:.4f} {z:.4f} {roll:.4f} {pitch:.4f} {yaw:.4f}"
-                    ET.SubElement(include, "scale").text = f"{scale:.3f} {scale:.3f} {scale:.3f}"
+                    self._add_instance(world, category, variant, x, y, z,
+                                       roll, pitch, yaw, scale)
 
                     category_placed += 1
                     models_placed += 1
@@ -609,6 +730,17 @@ class WorldPopulator:
         # Save the world file
         output_path = self.worlds_path / "forest_world.world"
         write_world_file(world_elem, output_path)
+
+        # Ground-truth sidecar: every placed instance with model id + pose +
+        # scale, in placement order (deterministic under --seed).
+        gt_path = output_path.with_name(output_path.stem + ".instances.json")
+        gt_path.write_text(json.dumps({
+            "world": output_path.name,
+            "seed": self.seed,
+            "count": len(self.instances),
+            "instances": self.instances,
+        }, indent=1))
+        logger.info(f"Ground-truth instances -> {gt_path}")
 
         logger.info(f"World file created at: {output_path}")
         logger.info(f"Total models placed: {models_placed}/{total_models} (failed: {models_failed})")

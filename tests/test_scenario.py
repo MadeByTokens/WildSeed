@@ -3,6 +3,7 @@
 import pytest
 
 from wildseed.core.scenario import (BIOME_NAMES, BIOME_SPACE, SCENARIO_FORMAT,
+                                    STRUCTURED_BIOMES, WILD_BIOMES,
                                     palette_from_manifest, resolve_scenario)
 
 
@@ -65,13 +66,41 @@ def test_scenario_cli_registered():
 
 
 def test_palette_from_manifest_covers_dod(tmp_path=None):
-    """Every biome palette must give placement >=3 tree + >=2 understory species
-    (the variety floor that breaks repeated-model VIO feature aliasing)."""
+    """Every WILD biome palette must give placement >=3 tree + >=2 understory
+    species (the variety floor that breaks repeated-model VIO feature
+    aliasing). Structured biomes (orchard/vineyard) are deliberately
+    monoculture — they only need a non-empty palette."""
     from pathlib import Path
     manifest = Path(__file__).parent.parent / "assets" / "manifest.yaml"
     if not manifest.exists():
         pytest.skip("assets/manifest.yaml not present")
-    for biome in BIOME_NAMES:
+    for biome in WILD_BIOMES:
         pal = palette_from_manifest(manifest, biome)
         assert len(pal["tree"]) >= 3, f"{biome}: <3 tree species"
         assert len(pal["bush"]) + len(pal["grass"]) >= 2, f"{biome}: <2 understory species"
+    for biome in STRUCTURED_BIOMES:
+        pal = palette_from_manifest(manifest, biome)
+        assert any(pal.values()), f"{biome}: empty palette"
+
+
+def test_structured_biomes_resolve_rows_within_envelope():
+    for biome in STRUCTURED_BIOMES:
+        spec = resolve_scenario(11, biome=biome)
+        assert spec["rows"], f"{biome}: no rows drawn"
+        for cat, drawn in spec["rows"].items():
+            envelope = BIOME_SPACE[biome]["rows"][cat]
+            for key, val in drawn.items():
+                lo, hi = envelope[key]
+                assert lo <= val <= hi, f"{biome}.{cat}.{key}={val} outside ({lo},{hi})"
+        # the rows category must not also be scattered
+        for cat in spec["rows"]:
+            assert spec["density"][cat] == 0, f"{biome}: {cat} both rowed and scattered"
+
+
+def test_wild_biomes_have_no_rows():
+    for biome in WILD_BIOMES:
+        assert resolve_scenario(11, biome=biome)["rows"] == {}
+
+
+def test_format_bumped_for_structured_biomes():
+    assert SCENARIO_FORMAT >= 2

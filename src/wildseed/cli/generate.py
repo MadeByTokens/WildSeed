@@ -28,11 +28,18 @@ from wildseed.core.forest import WorldPopulator
     help="RNG seed for reproducible placement (same seed -> identical world)."
 )
 @click.option(
+    "--rows", type=str, default=None,
+    help="JSON row-planting spec per category (CropCraft-style plantation), "
+         "e.g. '{\"tree\": {\"row_distance\": 6, \"plant_distance\": 4, "
+         "\"field_size\": 80, \"missing\": 0.1}}'. A category with a row spec "
+         "is planted in structured rows and skipped by the density scatter."
+)
+@click.option(
     "--verbose", "-v", is_flag=True,
     help="Show detailed statistics including scale info"
 )
 @click.pass_context
-def generate(ctx, base_path, density, output, seed, verbose):
+def generate(ctx, base_path, density, output, seed, rows, verbose):
     """Generate a forest world from existing models.
 
     Procedurally places models on terrain using intelligent positioning
@@ -74,6 +81,17 @@ def generate(ctx, base_path, density, output, seed, verbose):
                     console.print(f"[yellow]Warning:[/yellow] Unknown category '{key}'")
         except json.JSONDecodeError as e:
             raise click.ClickException(f"Invalid JSON for density: {e}")
+
+    rows_config = None
+    if rows:
+        try:
+            rows_config = json.loads(rows)
+            if not isinstance(rows_config, dict) or not all(
+                    isinstance(v, dict) for v in rows_config.values()):
+                raise click.ClickException(
+                    "--rows must be a JSON object of category -> spec object")
+        except json.JSONDecodeError as e:
+            raise click.ClickException(f"Invalid JSON for rows: {e}")
 
     # Determine base path
     project_base = Path(base_path) if base_path else Path.cwd()
@@ -127,7 +145,8 @@ def generate(ctx, base_path, density, output, seed, verbose):
                 seed=seed,
             )
 
-            world_path = populator.create_forest_world(density_config)
+            world_path = populator.create_forest_world(density_config,
+                                                       rows_config=rows_config)
 
             # Get statistics
             stats = populator.get_model_statistics()

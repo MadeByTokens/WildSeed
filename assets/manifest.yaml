@@ -76,3 +76,7 @@ biomes:
   alpine:    {trees: [fir_tree_01, pine_tree_01, fir_sapling, pine_sapling_medium, fir_sapling_medium, dead_tree_trunk_02], bushes: [fern_02, shrub_02], grasses: [grass_medium_01, dry_branches_medium_01], rocks: [boulder_01, namaqualand_boulder_04, namaqualand_rocks_01], ground: snow}
   winter:    {trees: [fir_tree_01, pine_tree_01, fir_sapling, pine_sapling_medium, fir_sapling_medium, dead_tree_trunk_02], bushes: [], grasses: [grass_medium_01, dry_branches_medium_01], rocks: [boulder_01, namaqualand_rocks_01], ground: snow}
   coastal:   {trees: [island_tree_01, island_tree_03, tree_small_02], bushes: [shrub_01, shrub_04, fern_02, crystalline_iceplant], grasses: [grass_bermuda_01, grass_medium_02], rocks: [coast_rocks_01, sand_rocks_small_01], ground: desert}
+  # Structured plantations (CropCraft-inspired): deliberately monoculture —
+  # repeated identical rows are the hardest loop-closure/place-recognition case.
+  orchard:   {trees: [island_tree_02], bushes: [shrub_03], grasses: [grass_medium_01, dandelion_01], rocks: [rock_07], ground: grassland}
+  vineyard:  {trees: [tree_small_02], bushes: [shrub_01], grasses: [grass_bermuda_01], rocks: [sand_rocks_small_01], ground: desert}

@@ -27,9 +27,17 @@ import yaml
 
 logger = logging.getLogger("wildseed.scenario")
 
-SCENARIO_FORMAT = 1
+SCENARIO_FORMAT = 2
 
-BIOME_NAMES = ("temperate", "savanna", "wetland", "alpine", "winter", "coastal")
+# Wilderness biomes: random scatter, subject to the >=3-tree/>=2-understory
+# species-variety floor (repeated-model aliasing is the enemy there).
+WILD_BIOMES = ("temperate", "savanna", "wetland", "alpine", "winter", "coastal")
+# Structured biomes: row plantations inspired by CropCraft's bed engine
+# (INRAE, Apache-2.0 — see README Credits). Deliberately monoculture +
+# repetitive — the hardest case for place recognition / loop closure, which
+# is exactly why a VIO/LIO test suite wants them.
+STRUCTURED_BIOMES = ("orchard", "vineyard")
+BIOME_NAMES = WILD_BIOMES + STRUCTURED_BIOMES
 
 # Per-biome envelopes. Centre values mirror the tuned demo scenarios
 # (tools/build_scenarios.py + docs/DEMO_REALISM_V2_REPORT.md); the ranges give
@@ -73,6 +81,29 @@ BIOME_SPACE = {
                    detail=(0.06, 0.12), smooth_sigma=(1.8, 2.2)),
         ground="desert", water=False,
         density=dict(tree=45, rock=30, bush=130, grass=220)),
+    # Structured plantations (CropCraft-inspired). `rows` plants that category
+    # in regular rows instead of scattering it; row params are drawn from the
+    # envelopes below and recorded in scenario.yaml like every other knob.
+    "orchard": dict(
+        presets=("flat", "hilly"),
+        knobs=dict(amplitude_m=(3, 9), feature_m=(140, 180),
+                   detail=(0.05, 0.10), smooth_sigma=(1.8, 2.2)),
+        ground="grassland", water=False,
+        density=dict(tree=0, rock=8, bush=25, grass=200),
+        rows=dict(tree=dict(row_distance=(5.0, 8.0), plant_distance=(3.5, 5.5),
+                            field_size=(60, 95), angle=(0.0, 3.1416),
+                            jitter=(0.08, 0.25), missing=(0.03, 0.12),
+                            wave_amplitude=(0.0, 1.5)))),
+    "vineyard": dict(
+        presets=("flat", "hilly"),
+        knobs=dict(amplitude_m=(2, 7), feature_m=(140, 180),
+                   detail=(0.05, 0.10), smooth_sigma=(1.8, 2.2)),
+        ground="desert", water=False,
+        density=dict(tree=10, rock=10, bush=0, grass=120),
+        rows=dict(bush=dict(row_distance=(2.2, 3.2), plant_distance=(1.2, 1.8),
+                            field_size=(45, 70), angle=(0.0, 3.1416),
+                            jitter=(0.04, 0.12), missing=(0.02, 0.10),
+                            wave_amplitude=(0.0, 0.8)))),
 }
 
 # Density counts jitter by this factor range around the biome base (then scale by
@@ -123,6 +154,15 @@ def resolve_scenario(
         jitter = float(rng.uniform(*DENSITY_JITTER))
         density[cat] = int(round(base * jitter * density_scale))
 
+    # Structured-row envelopes (orchard/vineyard): draw every row param the
+    # same way terrain knobs are drawn, in sorted key order.
+    rows = {}
+    for cat, envelope in sorted(space.get("rows", {}).items()):
+        drawn = {}
+        for key, (lo, hi) in sorted(envelope.items()):
+            drawn[key] = round(float(rng.uniform(lo, hi)), 3)
+        rows[cat] = drawn
+
     return {
         "scenario_format": SCENARIO_FORMAT,
         "seed": int(seed),
@@ -135,6 +175,7 @@ def resolve_scenario(
         "density_scale": float(density_scale),
         "terrain_knobs": knobs,
         "density": density,
+        "rows": rows,
         "stage_seeds": {
             "terraingen": _stage_seed(tg_ss),
             "ground": _stage_seed(ground_ss),
@@ -219,15 +260,21 @@ def run_scenario(
     if lakes:
         write_basin_water_models(base_path / "models", lakes)
 
-    # 4. populate (palette-constrained, placement-seeded)
+    # 4. populate (palette-constrained, placement-seeded; structured biomes
+    # plant their rows category in rows, everything else scatters)
     palette = palette_from_manifest(manifest_path, spec["biome"])
     populator = WorldPopulator(base_path=base_path, seed=seeds["placement"],
                                variants=palette, progress_callback=progress_callback)
-    world_path = populator.create_forest_world(dict(spec["density"]))
+    world_path = populator.create_forest_world(dict(spec["density"]),
+                                               rows_config=spec.get("rows") or None)
 
     # 5. finalize: name the world after the seed, add water, record the spec
     out_world = base_path / "worlds" / f"scenario_{spec['seed']}.world"
     shutil.move(str(world_path), str(out_world))
+    gt_src = world_path.with_name(world_path.stem + ".instances.json")
+    out_gt = out_world.with_name(out_world.stem + ".instances.json")
+    if gt_src.exists():
+        shutil.move(str(gt_src), str(out_gt))
     if lakes:
         _append_water_includes(out_world, len(lakes))
 
@@ -237,9 +284,11 @@ def run_scenario(
         "world": str(out_world),
         "dem": str(dem_path),
         "lakes": len(lakes),
+        "instances": str(out_gt),
     }
     record["palette"] = palette
     spec_path.write_text(yaml.safe_dump(record, sort_keys=False))
 
     return {"world": out_world, "spec": spec_path, "dem": dem_path,
-            "lakes": len(lakes), "stats": populator.get_model_statistics()}
+            "instances": out_gt, "lakes": len(lakes),
+            "stats": populator.get_model_statistics()}
