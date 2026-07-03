@@ -2,7 +2,7 @@
 
 **One seed, a whole wilderness.** WildSeed generates randomized, feature-rich outdoor
 Gazebo worlds for testing VIO / LIO / SLAM algorithms — procedural terrain, seeded
-ground materials, lakes, and hundreds of placed CC0 plants and rocks — and every
+ground materials, lakes, and hundreds of placed freely-licensed plants and rocks — and every
 world is **reproducible from a single master seed**, so a failing odometry run
 can name the exact world it saw and anyone can regenerate it.
 
@@ -502,22 +502,25 @@ terrain-following, master-seeded pipeline.
 
 ## Asset credits
 
-Every 3D model and texture WildSeed ships or downloads is **CC0 (public domain)** —
-no account, no login, no attribution required. Credit is appreciated nonetheless, so
-here is everything the demo worlds reuse (full per-asset provenance, licenses and
-evaluation notes live in [tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md); the
-buildable list with pinned sha256s is [assets/manifest.yaml](assets/manifest.yaml) +
-`assets/manifest.lock.yaml`).
+Everything WildSeed *currently* ships or downloads happens to be **CC0 (public
+domain)** — no account, no login, no attribution required. That is convenience, not
+policy: **any license that allows free redistribution is acceptable** (e.g. CC-BY —
+attribution is easy and always given). Non-CC0 assets, when adopted, will carry
+their author + license here and in the registry; NC/ND/"no redistribution" terms
+are never used, because this repo and the worlds that embed asset copies are
+public. Full per-asset provenance, licenses and evaluation notes live in
+[tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md); the buildable list with pinned
+sha256s is [assets/manifest.yaml](assets/manifest.yaml) + `assets/manifest.lock.yaml`.
 
 **3D models — [Poly Haven](https://polyhaven.com) (CC0).** Each id resolves as
 `https://polyhaven.com/a/<id>`:
 
 | category | assets |
 |----------|--------|
-| trees (15) | `island_tree_01` `island_tree_02` `island_tree_03` `jacaranda_tree` `tree_small_02` `quiver_tree_01` `quiver_tree_02` `searsia_burchellii` `dead_quiver_trunk` `fir_tree_01` `pine_tree_01` `fir_sapling` `fir_sapling_medium` `pine_sapling_medium` `dead_tree_trunk_02` |
-| rocks (6) | `boulder_01` `rock_07` `namaqualand_boulder_04` `namaqualand_rocks_01` `coast_rocks_01` `sand_rocks_small_01` |
-| bushes (9) | `shrub_01` `shrub_02` `shrub_03` `shrub_04` `fern_02` `wild_rooibos_bush` `crystalline_iceplant` `othonna_cerarioides` `nettle_plant` |
-| grass / ground cover (7) | `grass_medium_01` `grass_medium_02` `grass_bermuda_01` `flower_gazania` `flower_ursinia` `dandelion_01` `dry_branches_medium_01` |
+| trees + deadwood (20) | `island_tree_01` `island_tree_02` `island_tree_03` `jacaranda_tree` `tree_small_02` `quiver_tree_01` `quiver_tree_02` `searsia_burchellii` `searsia_lucida` `dead_quiver_trunk` `fir_tree_01` `pine_tree_01` `fir_sapling` `fir_sapling_medium` `pine_sapling_medium` `pine_sapling_small` `dead_tree_trunk_02` `dead_tree_trunk` `tree_stump_01` `tree_stump_02` |
+| rocks (12) | `boulder_01` `rock_07` `rock_09` `rock_face_01` `rock_moss_set_01` `namaqualand_boulder_02` `namaqualand_boulder_04` `namaqualand_rocks_01` `coast_rocks_01` `coast_rocks_02` `sand_rocks_small_01` `moon_rock_01` |
+| bushes (11) | `shrub_01` `shrub_02` `shrub_03` `shrub_04` `fern_02` `wild_rooibos_bush` `crystalline_iceplant` `othonna_cerarioides` `nettle_plant` `cheiridopsis_succulent` `shrub_sorrel_01` |
+| grass / ground cover (9) | `grass_medium_01` `grass_medium_02` `grass_bermuda_01` `flower_gazania` `flower_ursinia` `dandelion_01` `dry_branches_medium_01` `celandine_01` `periwinkle_plant` |
 
 **Ground textures — [ambientCG](https://ambientcg.com) (CC0).** Each id resolves as
 `https://ambientcg.com/view?id=<id>`: `Grass004` (base grass), `Ground027` (sand),

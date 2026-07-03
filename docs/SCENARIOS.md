@@ -9,7 +9,7 @@ from `docs/TUTORIAL.md`).
 ## Reproduce everything in two steps
 
 ```bash
-# 1. Build the CC0 asset set (fetch -> normalize -> convert; idempotent, ~20 assets)
+# 1. Build the asset set (fetch -> normalize -> convert; idempotent, ~50 assets, all CC0 today)
 python3 tools/build_assets.py
 
 # 2. Build all six scenarios + render the galleries
