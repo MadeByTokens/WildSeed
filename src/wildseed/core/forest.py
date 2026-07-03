@@ -78,6 +78,7 @@ class WorldPopulator:
             progress_callback: Optional[Callable[[int, str], None]] = None,
             seed: Optional[int] = None,
             variants: Optional[Dict[str, List[str]]] = None,
+            density_maps: Optional[Dict[str, Path]] = None,
     ):
         """Initialize the world populator.
 
@@ -91,6 +92,12 @@ class WorldPopulator:
                 palette). When set, placement only picks from these; models in
                 the list but missing from models/<cat>/ are skipped with a
                 warning. When None, every model on disk is eligible.
+            density_maps: Optional category -> grayscale image path. Placement
+                probability for that category follows pixel intensity (white =
+                dense, black = never) instead of the built-in zone/cluster
+                heuristics. Key ``"*"`` applies to any category without its own
+                map. The image spans the full terrain extent, north-up (row 0 =
+                +Y edge, col 0 = -X edge).
 
         Raises:
             FileNotFoundError: If required paths don't exist.
@@ -124,6 +131,55 @@ class WorldPopulator:
 
         self._verify_paths()
         self.model_variants = self._get_model_variants()
+        self.density_maps = self._load_density_maps(density_maps)
+
+    @staticmethod
+    def _load_density_maps(density_maps: Optional[Dict[str, Path]]) -> Dict[str, Dict]:
+        """Load grayscale density images into sampling tables.
+
+        Each map becomes ``{"weights": HxW float array, "cdf": flat cumsum}``;
+        positions are drawn by inverting the CDF (exact intensity-proportional
+        sampling — no rejection loop, so even a map that is 99% black places
+        every requested instance in the white sliver).
+        """
+        loaded: Dict[str, Dict] = {}
+        for key, path in (density_maps or {}).items():
+            from PIL import Image
+            arr = np.asarray(Image.open(path).convert("L"), dtype=np.float64) / 255.0
+            total = float(arr.sum())
+            if total <= 0.0:
+                raise ValueError(f"Density map {path} is all black (nothing can be placed)")
+            loaded[key] = {
+                "weights": arr,
+                "cdf": np.cumsum(arr.ravel()) / total,
+                "path": str(path),
+            }
+            logger.info(f"Density map for '{key}': {path} ({arr.shape[1]}x{arr.shape[0]})")
+        return loaded
+
+    def _density_map_for(self, category: str) -> Optional[Dict]:
+        """Return the density-map entry for a category ('*' is the fallback)."""
+        return self.density_maps.get(category) or self.density_maps.get("*")
+
+    def _sample_map_position(
+            self, entry: Dict, extent: Tuple[float, float, float, float]
+    ) -> Tuple[float, float]:
+        """Draw (x, y) with probability proportional to map pixel intensity.
+
+        The image is stretched over the FULL terrain extent, north-up: row 0
+        maps to the +Y edge, column 0 to the -X edge. A uniform jitter inside
+        the chosen pixel avoids grid-aligned placement on coarse maps.
+        """
+        min_x, max_x, min_y, max_y = extent
+        h, w = entry["weights"].shape
+        idx = int(np.searchsorted(entry["cdf"], self.rng.random(), side="right"))
+        idx = min(idx, h * w - 1)
+        row, col = divmod(idx, w)
+        u = (col + self.rng.random()) / w
+        v = (row + self.rng.random()) / h
+        x = min_x + u * (max_x - min_x)
+        y = max_y - v * (max_y - min_y)
+        return float(x), float(y)
 
     def _verify_paths(self) -> None:
         """Verify all required paths exist."""
@@ -407,16 +463,24 @@ class WorldPopulator:
             Tuple of (x, y, z) if valid position found, None otherwise.
         """
         bounds = terrain_mesh.vectors.reshape(-1, 3)
-        min_x, max_x = np.min(bounds[:, 0]) + margin, np.max(bounds[:, 0]) - margin
-        min_y, max_y = np.min(bounds[:, 1]) + margin, np.max(bounds[:, 1]) - margin
+        raw_extent = (float(np.min(bounds[:, 0])), float(np.max(bounds[:, 0])),
+                      float(np.min(bounds[:, 1])), float(np.max(bounds[:, 1])))
+        min_x, max_x = raw_extent[0] + margin, raw_extent[1] - margin
+        min_y, max_y = raw_extent[2] + margin, raw_extent[3] - margin
 
         max_attempts = 100  # Increased attempts for better placement
+        map_entry = self._density_map_for(category)
 
         for _ in range(max_attempts):
             x, y = None, None
             is_edge = self.rng.random() < self.ZONE_WEIGHTS[category]["edge"]
 
-            if category == "sand":
+            if map_entry is not None:
+                # Image-driven placement replaces the zone/cluster heuristics:
+                # the map IS the spatial prior. Distance constraints still apply.
+                x, y = self._sample_map_position(map_entry, raw_extent)
+
+            elif category == "sand":
                 if is_edge:
                     edge = self.rng.choice(["top", "bottom", "left", "right"])
                     if edge in ["top", "bottom"]:

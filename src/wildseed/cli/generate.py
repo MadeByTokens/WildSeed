@@ -35,11 +35,18 @@ from wildseed.core.forest import WorldPopulator
          "is planted in structured rows and skipped by the density scatter."
 )
 @click.option(
+    "--density-maps", "density_maps", type=str, default=None,
+    help="Grayscale density image(s) steering placement (white=dense, black=never; "
+         "image spans the terrain, north-up). Either a single path applied to all "
+         "categories, or JSON category -> path, e.g. "
+         "'{\"tree\": \"canopy.png\", \"*\": \"veg.png\"}' ('*' = fallback).",
+)
+@click.option(
     "--verbose", "-v", is_flag=True,
     help="Show detailed statistics including scale info"
 )
 @click.pass_context
-def generate(ctx, base_path, density, output, seed, rows, verbose):
+def generate(ctx, base_path, density, output, seed, rows, density_maps, verbose):
     """Generate a forest world from existing models.
 
     Procedurally places models on terrain using intelligent positioning
@@ -81,6 +88,24 @@ def generate(ctx, base_path, density, output, seed, rows, verbose):
                     console.print(f"[yellow]Warning:[/yellow] Unknown category '{key}'")
         except json.JSONDecodeError as e:
             raise click.ClickException(f"Invalid JSON for density: {e}")
+
+    maps_config = None
+    if density_maps:
+        text = density_maps.strip()
+        if text.startswith("{"):
+            try:
+                maps_config = json.loads(text)
+            except json.JSONDecodeError as e:
+                raise click.ClickException(f"Invalid JSON for density-maps: {e}")
+            if not isinstance(maps_config, dict) or not all(
+                    isinstance(v, str) for v in maps_config.values()):
+                raise click.ClickException(
+                    "--density-maps must be a JSON object of category -> image path")
+        else:
+            maps_config = {"*": text}
+        for cat, p in maps_config.items():
+            if not Path(p).exists():
+                raise click.ClickException(f"Density map for '{cat}' not found: {p}")
 
     rows_config = None
     if rows:
@@ -143,6 +168,7 @@ def generate(ctx, base_path, density, output, seed, rows, verbose):
                 base_path=project_base,
                 progress_callback=progress_callback,
                 seed=seed,
+                density_maps=maps_config,
             )
 
             world_path = populator.create_forest_world(density_config,
