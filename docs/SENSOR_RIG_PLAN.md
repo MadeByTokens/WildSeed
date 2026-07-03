@@ -315,3 +315,33 @@ validates the model; the Phase-0 harness (now env-parameterizable:
   drone's fisheye does too).
 - Deviation from plan: the rig body is SDF primitives (box + rotors + mast),
   not an assetgen Blender mesh — `wildseed rig` needs no Blender this way.
+
+### Phase 2 — GATE MET: byte-identical seeded trajectories; live flight smooth
+
+`wildseed fly --pattern orbit|flythrough|lawnmower|dolly --seed N [--play]`
+(`core/fly.py`): seeded waypoints → spline → terrain-following AGL (fast
+`TerrainSampler`: one LinearNDInterpolator over the terrain STL vertices, not
+the per-query triangle scan) → `trajectory_<pattern>_<seed>.json` written
+BEFORE playback. Playback drives `/world/<w>/set_pose` paced by sim time.
+
+Gate evidence: same seed ⇒ `cmp`-identical JSON; live orbit in the seeded demo
+world: 148 m path, odometry step mean 0.14 m / max 0.40 m at 50 Hz — no
+teleports (verifier ignores the legitimate initial spawn→start jump). Unit
+tests 113/113 (17 new: determinism, AGL bounds, margin, look-at-centre, yaw
+follows velocity, interpolation, kinematic-mode flag).
+
+**Hard-won findings:**
+1. **`/world/<w>/stats` publishes at ~5 Hz and `/clock` is silent headless** —
+   pacing a flight on raw stats quantizes motion into 0.2 s pose jumps (0.9 m
+   at 5 m/s). Fix: extrapolate sim time between stats ticks with the reported
+   real-time factor. (`set_pose` itself is fast: 0.2 ms median round-trip.)
+2. **Sim stalls (lazy sensor init) break wall-clock extrapolation** — one
+   stall snapped the pose 5 m. The commanded trajectory time is now monotonic
+   with bounded advance (4× nominal step): glitches become momentary
+   slow-downs, never jumps.
+3. Cubic splines overshoot zigzag waypoints (lawnmower turnarounds violated
+   the terrain margin by 12 m). Open paths use PCHIP (shape-preserving);
+   orbit keeps a periodic cubic for roundness.
+4. Kinematic playback is recorded as `"mode": "kinematic"` in the trajectory
+   JSON — IMU during set_pose flight is garbage by construction and datasets
+   must be able to tell.

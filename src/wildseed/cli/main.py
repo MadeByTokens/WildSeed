@@ -68,6 +68,7 @@ from wildseed.cli.randomize import randomize
 from wildseed.cli.weather import weather
 from wildseed.cli.assetgen import assetgen
 from wildseed.cli.rig import rig
+from wildseed.cli.fly import fly
 
 main.add_command(terrain)
 main.add_command(terraingen)
@@ -80,6 +81,7 @@ main.add_command(randomize)
 main.add_command(weather)
 main.add_command(assetgen)
 main.add_command(rig)
+main.add_command(fly)
 
 
 if __name__ == "__main__":
