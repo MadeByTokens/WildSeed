@@ -23,6 +23,8 @@
 # ros-humble-ros-gzharmonic package (NOT plain ros-gz, which targets Fortress).
 FROM wildseed:egl
 
+# base image runs as user `wildseed`; package installation needs root
+USER root
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl gnupg lsb-release \
@@ -35,5 +37,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-ros-gzharmonic \
         ros-humble-rosbag2-storage-mcap \
     && rm -rf /var/lib/apt/lists/*
+USER wildseed
 
 # `source /opt/ros/humble/setup.bash` before any ros2 command.

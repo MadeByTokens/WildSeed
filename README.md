@@ -191,7 +191,17 @@ them before the demo/realism pipeline surprises you.
   missing plants, waviness), the loop-closure stress test wilderness scatter can't produce
 - **Ground Truth**: every world ships a `.instances.json` sidecar (model, category, pose,
   scale per placed instance) + per-category `laser_retro` labels so lidar intensity doubles
-  as a semantic class channel (experimental)
+  as a semantic class channel (verified end-to-end: the labels ride on the *visuals*, which
+  is what gz's GPU lidar actually reads) + per-instance `Label` plugins so segmentation
+  cameras see the same class ids
+- **Sensor Rig**: `wildseed rig` + `generate --rig` drop a flying sensor platform into any
+  world — stereo + wide-angle + RGB-D + instance-segmentation cameras, 16-ch 3D lidar, IMU,
+  GPS, barometer, magnetometer, ground-truth odometry — every stream verified headless
+  ([docs](docs/SENSOR_RIG_PLAN.md))
+- **Seeded Flights & Recording**: `wildseed fly` (orbit/flythrough/lawnmower/dolly,
+  terrain-following, byte-reproducible per seed) and `wildseed record` (demo `video.mp4` +
+  optional lidar/IMU/GPS/ground-truth dataset). Kinematic mode for camera work; dynamic
+  PD-wrench mode ("hand of god") when you need a physically-consistent IMU
 - **Passable Understory**: robots drive through grass/bushes (no physics blow-ups) while
   lidar still returns hits from them
 - **Density-Map Placement**: steer vegetation layout with a grayscale image
@@ -297,6 +307,27 @@ export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$(pwd)/models
 gz sim worlds/forest_world.world
 ```
 
+### Test worlds with the sensor rig (fly + record)
+
+```bash
+# Build a world that hosts the flying sensor rig (adds the sensor system
+# plugins, GPS georeference, and semantic labels on every instance)
+wildseed generate --rig --seed 42
+
+# One command: orbit the world and write runs/<...>/video.mp4 (GPU container)
+tools/record_demo.sh orbit 7
+
+# Or drive it yourself inside the wildseed:egl container, next to a running
+# `gz sim -s -r worlds/forest_world.world`:
+wildseed fly -p flythrough --seed 3 --agl 10 --play        # camera work
+wildseed record -p orbit --seed 7 --dataset                # + lidar/IMU/GT dump
+wildseed record -p dolly --seed 5 --mode dynamic --dataset # honest IMU (PD wrench)
+```
+
+Same seed ⇒ byte-identical trajectory. Kinematic mode teleports the rig
+(smoothest camera; IMU meaningless); dynamic mode pushes it with forces
+(physics-consistent IMU). Details: [docs/SENSOR_RIG_PLAN.md](docs/SENSOR_RIG_PLAN.md).
+
 ## CLI Reference
 
 ```
@@ -305,6 +336,9 @@ wildseed terrain --help            # Terrain generation help
 wildseed convert --help            # Asset conversion help
 wildseed generate --help           # Forest generation help
 wildseed launch --help             # Launch Gazebo help
+wildseed rig --help                # Sensor rig model generation help
+wildseed fly --help                # Seeded rig flights help
+wildseed record --help             # Demo video / dataset recording help
 
 # Global options
 wildseed -v ...                    # Verbose output

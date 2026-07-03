@@ -368,3 +368,16 @@ one-command wrapper (server + record in one container). Gate: 56.3 s orbit →
    1.5% rejected, flight duration == trajectory duration.
 2. Encode at the measured fps, not the nominal sensor rate — then the video
    duration always equals sim duration even if the render drops frames.
+
+### Phase 5 — GATE MET: ROS 2 bridge overlay builds and bridges
+
+`docker/Dockerfile.ros` (`wildseed:ros`, 4.8 GB): ROS 2 Humble +
+`ros-humble-ros-gzharmonic` on top of `wildseed:egl` — the core images stay
+ROS-free. `docker/ros_gz_bridge.yaml` maps all default rig topics. Gate:
+against a running gz world, `parameter_bridge` lists the topic in
+`ros2 topic list`, `ros2 topic echo` returns live rig odometry, and a 12 s
+`ros2 bag record` captured 1164 Odometry messages.
+
+Findings: the base images run as user `wildseed` — overlay needs `USER root`
+for apt (then drops back). Jammy base ⇒ Humble; the Harmonic bridge package
+is `ros-humble-ros-gzharmonic` (plain `ros-gz` targets Fortress).
