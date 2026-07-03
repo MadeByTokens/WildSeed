@@ -414,3 +414,27 @@ catch-up transient, physically real); 181 m path; full dataset + video.
    from failed runs are evidence; use them first.
 5. gz OdometryPublisher twist is CHILD-frame (probe-verified) — rotate to
    world before using as PD velocity feedback.
+
+### Final — demo videos delivered; plan complete
+
+All phases 0–5 gated and committed. Demo videos (reproducible: seed + world
++ pattern in each run's `manifest.json`/`trajectory.json`; `runs/` is
+gitignored — regenerate with the commands below):
+
+- **temperate flythrough** — `wildseed scenario --seed 77 --biome temperate
+  --density-scale 1.6` (870 instances, 162 trees) + `wildseed rig --inject
+  worlds/scenario_77.world --config configs/rig_cinematic.yaml` +
+  `tools/record_demo.sh flythrough 11 worlds/scenario_77.world --speed 6
+  --agl 11` → 65 s @ 20 fps 1280×720, canopy-level pass over trees and
+  boulder clusters.
+- **temperate orbit** — same world, `tools/record_demo.sh orbit 5 ...
+  --radius 55 --agl 16 --speed 5` → 69 s @ 20 fps.
+- **dynamic dolly (honest IMU)** — the Phase-4 gate run itself
+  (`record -p dolly --seed 3 --mode dynamic --dataset`): video + full
+  lidar/IMU/GPS/TUM-ground-truth dataset, 3 cm mean tracking.
+
+Note for future demo recordings: pick the biome deliberately
+(`--biome temperate` + `--density-scale ≥1.5`); a random sparse biome
+(e.g. bush-heavy wetland seed 204) reads as empty terrain from altitude.
+Cosmetic: the record process can segfault at interpreter exit (gz/cv2
+destructor clash) — after `run complete` is printed; artifacts unaffected.
