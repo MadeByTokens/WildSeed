@@ -5,16 +5,22 @@
 # WildSeed — reproducible wilderness for robot perception
 
 **One seed, a whole wilderness.** WildSeed generates randomized, feature-rich outdoor
-Gazebo worlds for testing VIO / LIO / SLAM algorithms — procedural terrain, seeded
-ground materials, lakes, and hundreds of placed freely-licensed plants and rocks — and every
-world is **reproducible from a single master seed**, so a failing odometry run
-can name the exact world it saw and anyone can regenerate it.
+**[Gazebo](https://gazebosim.org/)** worlds for testing VIO / LIO / SLAM algorithms —
+procedural terrain, seeded ground materials, lakes, and hundreds of placed
+freely-licensed plants and rocks — and every world is **reproducible from a single
+master seed**, so a failing odometry run can name the exact world it saw and anyone
+can regenerate it.
+
+Everything here is built around **[Gazebo Sim Harmonic](https://gazebosim.org/docs/harmonic)**:
+each generated world is a standard SDF `.world` file you launch with plain `gz sim`
+(no custom plugins to install), and the bundled Docker images ship Gazebo ready to run.
 
 **Scope: worlds only.** Robots, sensors and autonomy stacks are deliberately out of
 scope and live in a separate repository — WildSeed generates the environments they
 are spawned into. (The only sensor-adjacent piece here is a printable lens-flare
 camera-plugin snippet, see `wildseed weather --show-lens-flare-snippet`.)
 
+[![Gazebo: Harmonic](https://img.shields.io/badge/Gazebo-Harmonic-f58113.svg)](https://gazebosim.org/docs/harmonic)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
