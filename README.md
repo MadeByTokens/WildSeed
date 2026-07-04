@@ -29,19 +29,19 @@ identical world, always.*
 **Orbit over the temperate-hills demo scenario** — `wildseed record -p orbit --seed 5`
 (kinematic, 20 fps):
 
-<!-- drag & drop runs/demo_videos/web/wildseed_temperate_orbit_seed5.mp4 below this line -->
+https://github.com/user-attachments/assets/4586c0da-d826-49f9-8eb0-7f19e744c49d
 
 **Low flythrough through a dense temperate build** (~2,500 instances, single-sun
 shadows + procedural sky) — `wildseed record -p flythrough --seed 11 --agl 6`
 (kinematic, terrain-following):
 
-<!-- drag & drop runs/demo_videos/web/wildseed_temperate_flythrough_seed11.mp4 below this line -->
+https://github.com/user-attachments/assets/8b1199a6-b1c0-4bee-8ea6-05a57d2f5078
 
 **Dynamic "hand-of-god" dolly with a physically consistent IMU** —
 `wildseed record -p dolly --seed 3 --mode dynamic --dataset` (PD-wrench flight,
 3 cm mean tracking error, full lidar/IMU/GPS/ground-truth dataset dumped alongside):
 
-<!-- drag & drop runs/demo_videos/web/wildseed_dynamic_dolly_honest_imu_seed3.mp4 below this line -->
+https://github.com/user-attachments/assets/04964c7b-7570-4eff-95f7-7894b2115d6c
 
 *Every flight is byte-reproducible: same seed ⇒ same trajectory ⇒ same video.
 Recorded with [`wildseed record`](#test-worlds-with-the-sensor-rig-fly--record); the
