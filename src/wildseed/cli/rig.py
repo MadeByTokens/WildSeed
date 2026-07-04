@@ -28,9 +28,14 @@ from wildseed.core.rig import (RigConfig, inject_rig_into_world, rig_topics,
                    "plugins, GPS georeference, semantic labels) but NOT the "
                    "rig include/model — for worlds that host an externally "
                    "spawned robot.")
+@click.option("--no-labels", is_flag=True, default=False,
+              help="With --inject: skip the per-include semantic Label "
+                   "plugins. Use when nothing consumes segmentation (e.g. an "
+                   "external robot without a segmentation camera) — on dense "
+                   "worlds thousands of Label systems are pure overhead.")
 @click.pass_context
 def rig(ctx, config_path, models_dir, name, inject_world, pose_str,
-        shell_only):
+        shell_only, no_labels):
     """Generate the flying sensor-rig model (test instrument + camera dolly).
 
     Full suite by default: stereo cams, wide-angle, RGB-D, instance
@@ -57,6 +62,8 @@ def rig(ctx, config_path, models_dir, name, inject_world, pose_str,
 
     if shell_only and not inject_world:
         raise click.ClickException("--shell-only requires --inject <world>")
+    if no_labels and not inject_world:
+        raise click.ClickException("--no-labels requires --inject <world>")
 
     if inject_world:
         rig_pose = None
@@ -75,11 +82,13 @@ def rig(ctx, config_path, models_dir, name, inject_world, pose_str,
                 raise click.ClickException("--pose needs 3 or 6 numbers")
             rig_pose = tuple(parts)
         inject_rig_into_world(Path(inject_world), config, Path(models_dir),
-                              rig_pose=rig_pose, shell_only=shell_only)
+                              rig_pose=rig_pose, shell_only=shell_only,
+                              labels=not no_labels)
         what = "world-shell injected" if shell_only else "rig injected"
+        labels_note = ("labels skipped (--no-labels)" if no_labels
+                       else "labels added to unlabeled includes")
         console.print(f"[green]{what}[/green] into "
-                      f"[cyan]{inject_world}[/cyan] (idempotent; labels added "
-                      "to unlabeled includes)")
+                      f"[cyan]{inject_world}[/cyan] (idempotent; {labels_note})")
         return
 
     model_dir = write_rig_model(config, Path(models_dir))

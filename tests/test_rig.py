@@ -166,3 +166,30 @@ def test_inject_shell_only_adds_no_rig(tmp_path):
                     if i.findtext("name") == "tree_0")
     assert any(p.get("name") == "gz::sim::systems::Label"
                for p in tree_inc.findall("plugin"))
+
+
+def test_inject_no_labels_skips_label_plugins(tmp_path):
+    from wildseed.core.rig import inject_rig_into_world
+
+    world_file = tmp_path / "w.world"
+    world_file.write_text("""<?xml version="1.0"?>
+<sdf version="1.8"><world name="w">
+  <include><uri>model://ground</uri><name>terrain</name></include>
+  <include><uri>model://tree/fir</uri><name>tree_0</name></include>
+</world></sdf>""")
+
+    inject_rig_into_world(world_file, RigConfig(), tmp_path / "models",
+                          shell_only=True, labels=False)
+    inject_rig_into_world(world_file, RigConfig(), tmp_path / "models",
+                          shell_only=True, labels=False)  # idempotent
+
+    root = ET.parse(world_file).getroot()
+    world = root.find("world")
+    # the shell is there...
+    plugins = [p.get("name") for p in world.findall("plugin")]
+    assert plugins.count("gz::sim::systems::Sensors") == 1
+    assert len(world.findall("spherical_coordinates")) == 1
+    # ...but NO include got a Label plugin
+    for inc in world.findall("include"):
+        assert not any(p.get("name") == "gz::sim::systems::Label"
+                       for p in inc.findall("plugin"))

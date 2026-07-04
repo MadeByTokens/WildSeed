@@ -1,0 +1,35 @@
+# WildSeed sim-fast conversion profile
+#
+# Use with: wildseed -c configs/sim-fast.yaml convert -i Blender-Assets -o models
+#
+# The counterpart to configs/realism.yaml, for CLOSED-LOOP ROBOT SIMS where the
+# real-time factor matters more than leaf-card fidelity: realism keeps foliage
+# at FULL poly (tree/bush/grass visual_decimation 1.0 + skip_foliage), which
+# yields 30-60 MB visual meshes — dense worlds (hundreds-to-thousands of
+# includes) then collapse the RTF and starve sim-time consumers (controllers,
+# VIO). This profile decimates EVERYTHING, foliage included.
+#
+# Trade-off: leaf cards thin out and silhouettes coarsen — fine for lidar/VIO
+# texture (ground PBR dominates features), wrong for photoreal renders or
+# segmentation datasets. Collision strategies match realism.yaml (physics
+# behaviour identical); only the VISUAL cost changes.
+
+blender:
+  visual_decimation: 0.1        # global fallback (legacy default)
+  collision_decimation: 0.01    # global fallback (legacy default)
+  categories:
+    tree:
+      visual_decimation: 0.1          # ~10% of full poly (realism keeps 1.0)
+      skip_foliage_decimation: false  # decimate leaf cards too — that's the point
+      collision_strategy: trunk_cylinder
+    rock:
+      visual_decimation: 0.2          # photo-scan meshes decimate gracefully
+      collision_strategy: convex_hull
+    bush:
+      visual_decimation: 0.1
+      skip_foliage_decimation: false
+      collision_strategy: box
+    grass:
+      visual_decimation: 0.1
+      skip_foliage_decimation: false
+      collision_strategy: box

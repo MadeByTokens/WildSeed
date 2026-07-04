@@ -356,7 +356,8 @@ def add_rig_include(world: ET.Element, config: RigConfig,
 def inject_rig_into_world(world_path: Path, config: RigConfig,
                           models_path: Path,
                           rig_pose: Optional[Tuple[float, ...]] = None,
-                          shell_only: bool = False) -> Path:
+                          shell_only: bool = False,
+                          labels: bool = True) -> Path:
     """Retrofit an EXISTING world file with the rig + everything it needs.
 
     Idempotent: adds the sensor system plugins, spherical coordinates,
@@ -369,6 +370,11 @@ def inject_rig_into_world(world_path: Path, config: RigConfig,
     ``shell_only=True`` injects the world-shell (system plugins, spherical
     coordinates, labels) but neither the rig include nor the rig model —
     for worlds that host an externally spawned robot instead of the rig.
+
+    ``labels=False`` skips adding the per-include Label plugins — for worlds
+    whose consumer has no segmentation camera, where thousands of Label
+    systems are pure per-entity overhead (e.g. an external UGV robot).
+    Existing labels are left untouched (strip them consumer-side if needed).
     """
     world_path = Path(world_path)
     tree = ET.parse(world_path)
@@ -390,15 +396,16 @@ def inject_rig_into_world(world_path: Path, config: RigConfig,
                 rig_pose = (0.0, 0.0, 40.0, 0.0, 0.0, 0.0)
             add_rig_include(world, config, tuple(rig_pose))
 
-    for inc in world.findall("include"):
-        uri = inc.findtext("uri") or ""
-        if not uri.startswith("model://") or uri == f"model://{config.name}":
-            continue
-        has_label = any(p.get("name") == "gz::sim::systems::Label"
-                        for p in inc.findall("plugin"))
-        if not has_label:
-            category = uri[len("model://"):].split("/")[0]
-            add_label_plugin(inc, category)
+    if labels:
+        for inc in world.findall("include"):
+            uri = inc.findtext("uri") or ""
+            if not uri.startswith("model://") or uri == f"model://{config.name}":
+                continue
+            has_label = any(p.get("name") == "gz::sim::systems::Label"
+                            for p in inc.findall("plugin"))
+            if not has_label:
+                category = uri[len("model://"):].split("/")[0]
+                add_label_plugin(inc, category)
 
     try:
         ET.indent(tree, space="    ")

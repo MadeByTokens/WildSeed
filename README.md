@@ -141,6 +141,18 @@ python3 tools/build_scenarios.py    # build all 6 + render tools/scenarios_galle
 Density is fully tunable per category — `wildseed generate --density
 '{"tree":80,"rock":6,"bush":40,"grass":120}' --seed 7` — same `--seed` → identical world.
 
+**Closed-loop robot sims — density is the RTF budget.** Gazebo's real-time
+factor tracks include count: a ~330-include `scenario` world runs at RTF ≈0.3–0.6
+(RTX 2070-class) while the 2,849-include demo forest collapses to RTF 0.03 —
+measured to be **physics-step-bound**, not render-bound (shadows/labels off
+changed nothing; `max_step_size` 1→4 ms scaled RTF ~linearly). If a robot's
+controllers starve, first cut `--density-scale` (grass/bush dominate include
+count), then raise the world's physics step. For worlds hosting an external
+robot with no segmentation camera, inject with `wildseed rig --inject --shell-only
+--no-labels` (skips one Label plugin per include). Assets converted with
+`configs/realism.yaml` keep foliage at FULL poly (30–60 MB visuals);
+`configs/sim-fast.yaml` is the RTF-lean conversion counterpart.
+
 **Docs:**
 
 - **[docs/TUTORIAL.md](docs/TUTORIAL.md)** — build & randomize a world in 5 minutes
