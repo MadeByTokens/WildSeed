@@ -230,39 +230,51 @@ support added: `vio_bench.py --heightmap PNG,EXTENT,Z` (+ a guarded `HEIGHTMAP` 
 | d2 flat heightmap (Z≈0) | GOOD | 317 | 0.55 | 0.99 |
 | d2 rough heightmap (Z=0.35) | MARGINAL | 68 | 0.90 | 0.90 |
 
-Read carefully — this does **not** say "relief hurts the camera":
-- The heightmap is skinned with the **rich photographic grassland texture** (`ground_Color.png`),
-  which alone makes flat ground score GOOD. **Ground-texture richness is the dominant VIO lever**
-  — the same message as P1 (bare *patchy* ground = GOOD) — and it swamps the relief term here.
-- The flat case is **planar**, so the essential-matrix RANSAC is degenerate and *flattered* (many
-  coplanar points fit some epipolar geometry → inflated 317 / inlier_ratio 0.99; this is a known
-  vio_bench caveat). The relief case **breaks planarity** → the E-matrix is well-conditioned →
-  68 is the honest, de-degenerated read (still MARGINAL, decent).
-- So d2's camera contribution is not isolable on a rich texture; what the run *does* establish is
-  that a heightmap ground benchmarks end-to-end and that **texture dominates**. On a *bland*
-  ground the relief signal is visible instead — that is exactly the d1 mesh result (20 → 91
-  inliers as relief amplitude rose).
+**⚠️ This flat=GOOD number is a PLANAR-DEGENERACY ARTIFACT — do not read it as "texture fixes
+flat VIO".** The Phase-A sweep below (patchy compositor on a real 306 m flat mesh, same fast pose)
+scored flat + rich-texture + bare at only **13 inliers, ALIASING RISK** — *worse* than uniform.
+The d2_flat 317/0.99 is the essential-matrix RANSAC being *flattered by coplanar points* (many fit
+some epipolar geometry; a known vio_bench caveat), not genuine texture robustness. The relief case
+**breaks planarity** → the E-matrix is well-conditioned → 68 is the honest read. So on flat ground,
+**a GOOD verdict is not trustworthy** — always pair a flat scene with a non-planar one.
 
-**d2 verdict:** feasible and RTF-cheap; the strongest LIO lever and the only way to get cm relief
-on flat drivable ground. Its camera value is conditional on the ground texture being bland;
-where the texture is already rich, d2's payoff is LIO + realism + traversable relief, not extra
-camera inliers.
+**d2 verdict:** feasible and RTF-cheap (RTF 1.0, load 1.8 s); the strongest **LIO** lever and the
+only way to get cm relief on flat *drivable* ground. Its camera value tracks the relief's parallax
+(as in d1), not the texture; the flat-vs-rough camera delta here is confounded by planar degeneracy
+and is superseded by the Phase-A structure-vs-texture decomposition below.
 
 ---
 
-## Bottom line (lever hierarchy, measured)
+## Phase A — recipe-settling sweep (structure vs texture, and does it stack to GOOD?)
 
-1. **Ground texture richness is the #1 VIO lever.** Patchy/photographic ground scores GOOD even
-   bare + flat (P1 hilly-patchy = GOOD; d2 flat rich-texture = GOOD). Uniform/bland ground is the
-   root failure (P1 flat-uniform = ALIASING RISK). **Fix the ground material first.**
-2. **Steered objects (c)** are the strongest *added* lever when the ground must stay flat and
-   bland: +distinct landmarks beside a drivable path, ~175 objects, RTF 1.0. Gain saturates fast;
-   count above that is pure RTF cost. Best camera robustness per unit realism.
-3. **Geometric relief (d)** is the RTF-cheapest lever (one mesh/heightmap, no instance count) and
-   the **best LIO lever** (range structure the camera-only benchmark can't see). d1 (mesh) is
-   Nyquist-capped and trades VIO against traversable slope; **d2 (heightmap) removes both limits**
-   — cm relief on flat drivable ground at RTF 1.0 — and is the recommended relief path.
-4. **Ship (c) and (d) as switchable, composable knobs** (they fix different failure modes:
-   landmark starvation vs surface geometry / LIO), on top of a rich ground texture. Plumbing
-   exists: `corridor_map.py` + `--density-maps` for (c); `terraingen` detail flags (d1) or the
-   `HEIGHTMAP` render path (d2) for (d).
+Cheap proxy sweep to settle the shippable recipe *before* the expensive end-to-end validation.
+All at the P1 failure pose, grassland biome throughout so the only texture variable is
+uniform(bland) vs patchy(rich).
+
+| terrain | texture | objects | verdict | inliers/pair | Δ vs uniform-bare |
+|---|---|---|---|---|---|
+| flat | uniform | — | ALIASING | 20 | (baseline) |
+| flat | **patchy** | — | ALIASING | **13** | **−7** (texture alone: no help) |
+| flat | uniform | c175 | MARGINAL | 57 | +37 (objects) |
+| flat | **patchy** | c175 | MARGINAL | 73 | +53 (objects ×texture) |
+| relief(gentle) | uniform | — | ~MARGINAL | 38 | +18 (relief) |
+| relief(gentle) | **patchy** | — | MARGINAL | 68 | +48 (relief ×texture) |
+| **relief + patchy + c175 (full stack)** | | | MARGINAL | **89** (fast) / **148** (moderate) | full stack |
+
+**Corrected lever hierarchy (this supersedes the earlier "texture is #1" claim):**
+1. **3D structure / parallax is the PRIMARY lever** — steered objects (c) or geometric relief (d).
+   Flat-bare fails at a realistic fast pose *regardless of texture* (uniform 20, patchy 13, both
+   ALIASING RISK). Objects give more per unit than relief here (+37 vs +18).
+2. **Texture richness is a MULTIPLIER on structure, not a standalone fix.** Patchy adds nothing on
+   dead-flat ground (13, slightly worse — it has no 3D points to anchor distinctive features), but
+   amplifies the structure levers once present (+16 with objects, +30 with relief). Texture only
+   pays off when it drapes over trackable geometry.
+3. **The levers STACK.** relief + patchy + c175 reaches **148 confident inliers** at a moderate-fast
+   pose — GOOD-in-practice; the "MARGINAL" verdict fires only because `ratio_reject` 0.87 is 0.02
+   over the 0.85 threshold, while 148 inliers is a healthy VIO constraint count.
+4. **d2 is NOT required for the VIO recipe.** The full stack uses d1 (drivable mesh relief); d1's
+   parallax contribution is what matters for the camera, so **#3 (d2 pipeline integration) can be
+   deferred** — d2's distinct value is cm relief on *truly-flat* terrain + LIO range structure.
+
+**Shippable recipe:** *patchy ground texture + steered objects (c, ~175) + drivable relief (d1),
+stacked* — on flat drivable ground, RTF ~1.0. Validate THIS (vs the bare-uniform failure) end-to-end.
