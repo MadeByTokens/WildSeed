@@ -165,6 +165,15 @@ class RunRecorder:
         time.sleep(0.3)   # let in-flight callbacks drain
         if self._writer is not None:
             self._writer.join(timeout=60)
+        # Frame timestamps (sim time) so cam frames can be associated with the
+        # lidar npz / TUM ground truth — a dataset without them can't be
+        # time-aligned for VIO/LIO eval. Frame i <-> _frame_times[i] (same i).
+        if self._frame_times:
+            with open(self.frames_dir / "frames.csv", "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["idx", "t"])
+                for i, t in enumerate(self._frame_times):
+                    w.writerow([i, f"{t:.6f}"])
         if self.dataset:
             with open(self.dataset_dir / "imu.csv", "w", newline="") as f:
                 w = csv.writer(f)
