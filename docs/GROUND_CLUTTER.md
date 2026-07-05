@@ -196,4 +196,73 @@ respected by both levers when sized right.
   count axis entirely — its only ceiling is mesh resolution (→ d2/Terra for cm relief).
 - **Next step for the strongest single lever:** d2 (Terra `<heightmap>`) to carry cm–dm surface
   roughness on flat, drivable ground — the one thing the current mesh path (Nyquist-limited)
-  and the object path (RTF-limited) both cannot deliver.
+  and the object path (RTF-limited) both cannot deliver. **Prototyped — see below.**
+
+---
+
+## Option (d2) — Terra `<heightmap>` feasibility spike (measured)
+
+The mesh path (d1) is Nyquist-limited to ≳1.2 m relief. d2 uses a gz `<heightmap>` (Ogre2
+Terra: GPU-tessellated + LOD'd render, one static collision surface) to carry **cm–dm relief on
+flat, drivable ground**. Spike: `scratchpad/build_d2.py` writes a 1025² heightmap (2¹⁰+1) over a
+60 m patch = **5.9 cm/px**, 0.35 m of multi-octave fractal roughness with the low frequencies
+removed (no macro tilt), skinned with the grassland texture, rig injected at 2 m. Benchmark
+support added: `vio_bench.py --heightmap PNG,EXTENT,Z` (+ a guarded `HEIGHTMAP` branch in
+`terrain_scene.py`) renders a heightmap through the same `vio_cam` trajectory as the mesh path.
+
+**§6 unknowns — both RESOLVED:**
+- **Does gpu_lidar return on a heightmap? YES.** `finite_frac` 0.63 (vs ~0.10–0.18 on the mesh
+  scenes — the small close patch + relief catches beams that skim off flat ground), 5 clean
+  scans, `ring_roughness_m` 0.198 (cm–dm structure the LIO can register; a flat plane returns
+  each ring as a constant-range circle → ~0 by construction). gpu_lidar is a GPU *render* raycast
+  (Ogre2Heightmap), so it sees the visual heightmap regardless of the collision detector.
+- **Does Terra hold RTF at hi-res? YES.** 1025² (>1 M height samples) runs at **RTF 1.0**
+  (min 0.998) and loads in **1.8 s** — ~10× faster to load than the instance-clutter worlds
+  (17–26 s) at the same real-time factor. This is the RTF headroom advantage over (c): relief
+  detail is a resolution knob, not an instance count.
+- **Drivable? YES.** Removing the low frequencies keeps the macro surface flat: mean slope
+  **4.7°**, p95 9.1° — cm–dm roughness a robot drives over, unlike the d1 rough mesh (15°).
+
+**VIO on the heightmap — a benchmark confound, not a clean relief verdict:**
+
+| config (same texture, same pose) | verdict | inliers/pair | ratio_reject | inlier_ratio |
+|---|---|---|---|---|
+| d2 flat heightmap (Z≈0) | GOOD | 317 | 0.55 | 0.99 |
+| d2 rough heightmap (Z=0.35) | MARGINAL | 68 | 0.90 | 0.90 |
+
+Read carefully — this does **not** say "relief hurts the camera":
+- The heightmap is skinned with the **rich photographic grassland texture** (`ground_Color.png`),
+  which alone makes flat ground score GOOD. **Ground-texture richness is the dominant VIO lever**
+  — the same message as P1 (bare *patchy* ground = GOOD) — and it swamps the relief term here.
+- The flat case is **planar**, so the essential-matrix RANSAC is degenerate and *flattered* (many
+  coplanar points fit some epipolar geometry → inflated 317 / inlier_ratio 0.99; this is a known
+  vio_bench caveat). The relief case **breaks planarity** → the E-matrix is well-conditioned →
+  68 is the honest, de-degenerated read (still MARGINAL, decent).
+- So d2's camera contribution is not isolable on a rich texture; what the run *does* establish is
+  that a heightmap ground benchmarks end-to-end and that **texture dominates**. On a *bland*
+  ground the relief signal is visible instead — that is exactly the d1 mesh result (20 → 91
+  inliers as relief amplitude rose).
+
+**d2 verdict:** feasible and RTF-cheap; the strongest LIO lever and the only way to get cm relief
+on flat drivable ground. Its camera value is conditional on the ground texture being bland;
+where the texture is already rich, d2's payoff is LIO + realism + traversable relief, not extra
+camera inliers.
+
+---
+
+## Bottom line (lever hierarchy, measured)
+
+1. **Ground texture richness is the #1 VIO lever.** Patchy/photographic ground scores GOOD even
+   bare + flat (P1 hilly-patchy = GOOD; d2 flat rich-texture = GOOD). Uniform/bland ground is the
+   root failure (P1 flat-uniform = ALIASING RISK). **Fix the ground material first.**
+2. **Steered objects (c)** are the strongest *added* lever when the ground must stay flat and
+   bland: +distinct landmarks beside a drivable path, ~175 objects, RTF 1.0. Gain saturates fast;
+   count above that is pure RTF cost. Best camera robustness per unit realism.
+3. **Geometric relief (d)** is the RTF-cheapest lever (one mesh/heightmap, no instance count) and
+   the **best LIO lever** (range structure the camera-only benchmark can't see). d1 (mesh) is
+   Nyquist-capped and trades VIO against traversable slope; **d2 (heightmap) removes both limits**
+   — cm relief on flat drivable ground at RTF 1.0 — and is the recommended relief path.
+4. **Ship (c) and (d) as switchable, composable knobs** (they fix different failure modes:
+   landmark starvation vs surface geometry / LIO), on top of a rich ground texture. Plumbing
+   exists: `corridor_map.py` + `--density-maps` for (c); `terraingen` detail flags (d1) or the
+   `HEIGHTMAP` render path (d2) for (d).

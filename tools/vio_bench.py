@@ -60,6 +60,8 @@ USAGE (inside wildseed:egl, GPU)
   python3 tools/vio_bench.py --ground-modes patchy,uniform_t1 --biome desert
   # knobs:
   python3 tools/vio_bench.py --frames 14 --step 0.6 --yaw-amp-deg 8 --region full
+  # option d2 — benchmark a gz <heightmap> instead of the mesh ground:
+  python3 tools/vio_bench.py --heightmap dem/hm_d2.png,60,0.35 --agl 2 --pitch 0.35 --step 2.0
 Outputs: printed table, frames/vio_bench_<tag>.json, frames/vio_bench_<tag>_matches.png.
 
 Assumes terrain+placement already built (e.g. via `wildseed scenario` / build_scenarios /
@@ -100,6 +102,26 @@ def terrain_z(verts, x, y):
     return float(verts[int(d.argmin()), 2])
 
 
+def read_heightmap(spec, grid=160):
+    """Option d2: derive (verts, extent, center) from a gz heightmap PNG so the same
+    trajectory/z-lookup machinery works without a WildSeed mesh. spec = 'PNG,EXTENT_m,Z_m'.
+    Image is north-up (gz): row 0 = +Y edge, col 0 = -X edge."""
+    from PIL import Image
+    png, ext_s, z_s = spec.split(",")
+    ext, zmax = float(ext_s), float(z_s)
+    hm = np.asarray(Image.open(png).convert("L"), np.float32) / 255.0 * zmax
+    n = hm.shape[0]
+    half = ext / 2.0
+    idx = np.linspace(0, n - 1, grid).astype(int)
+    vs = []
+    for r in idx:
+        y = half - (r / (n - 1)) * ext
+        for c in idx:
+            x = -half + (c / (n - 1)) * ext
+            vs.append((x, y, float(hm[r, c])))
+    return np.asarray(vs, np.float32), ext, (0.0, 0.0)
+
+
 def trajectory(verts, ext, n, step, agl, pitch, yaw_amp_deg, yaw_period):
     """Canonical benchmark path: start near -X edge, translate +X (forward look dir) so
     features flow through and out of frame (forcing re-acquisition), with a sinusoidal yaw
@@ -132,7 +154,9 @@ def render_trajectory(poses, fov):
     """Render all poses in ONE gz session (one vio_cam_<i> per pose). Returns list of RGB
     frames (uint8, H x W x 3), None for any that failed to capture."""
     traj = ";".join(f"{x:.4f},{y:.4f},{z:.4f},{p:.5f},{ya:.5f}" for (x, y, z, p, ya) in poses)
-    env = dict(os.environ, FOREST="1", VIO_TRAJ=traj, VIO_FOV=str(fov))
+    # HEIGHTMAP mode (option d2) renders a bare gz <heightmap>; don't graft forest placement.
+    env = dict(os.environ, VIO_TRAJ=traj, VIO_FOV=str(fov))
+    env["FOREST"] = "0" if os.environ.get("HEIGHTMAP") else "1"
     run(["python3", f"{WS}/tools/terrain_scene.py"], env=env)
     cams = [f"vio_cam_{i}" for i in range(len(poses))]
     g = subprocess.Popen(
@@ -300,10 +324,17 @@ def main():
     ap.add_argument("--no-render", action="store_true",
                     help="Reuse cached frames (frames/vbf_<tag>_<i>.npy) from a prior run "
                          "-- re-analyze a different --region/--orb/--ratio for free.")
+    ap.add_argument("--heightmap", default=None,
+                    help="Option d2: benchmark a gz <heightmap> instead of the mesh ground. "
+                         "Format 'PNG,EXTENT_m,Z_m' (e.g. dem/hm_d2.png,60,0.35).")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
-    verts, ext, _ = read_terrain(OBJ)
+    if args.heightmap:
+        os.environ["HEIGHTMAP"] = args.heightmap
+        verts, ext, _ = read_heightmap(args.heightmap)
+    else:
+        verts, ext, _ = read_terrain(OBJ)
     poses = trajectory(verts, ext, args.frames, args.step, args.agl, args.pitch,
                        args.yaw_amp_deg, args.yaw_period)
     K = intrinsics(640, 480, args.fov)

@@ -50,6 +50,7 @@ See **`docs/VIO_BENCH.md`** for the full method + how to read the numbers.
 | **`rtf_bench.py`** | **RTF-under-load harness** — the COST gauge. Launches a real `gz sim -s -r` server on a rig world, attaches cam/lidar consumers, waits for the sim clock to advance (skips load stall), and samples `real_time_factor` off `/stats`. Reports `window_rtf` / `rtf_min` / `load_wait_s` / `stalled`. Keep the operating point where `rtf_min` ≥ ~0.5. |
 | **`lidar_spread.py`** | **LIO axis (V3)** the camera benchmark can't see: gpu_lidar range **roughness**. `ring_roughness_m` = mean std of Δrange between adjacent azimuth beams (~0 over flat ground, rises with clutter/relief), plus `range_std_m` / `near_frac` / `finite_frac`. |
 | `corridor_map.py` | **Steered-scatter (c) plumbing**: paints a driving-corridor density map (white band at the drive line, `--soft` Gaussian taper) for `generate --density-maps` → the object budget lands where the vehicle drives (high local density, low total count). |
+| `heightmap_relief.py` | **Geometric-relief (d2) plumbing**: writes a hi-res gz `<heightmap>` ground with cm–dm surface roughness on a FLAT drivable macro (Ogre2 Terra: GPU-tessellated + LOD'd, one static mesh) + injects the rig. Carries relief the Nyquist-limited WildSeed mesh (d1) can't, at RTF 1.0. Measure with `rtf_bench` / `lidar_spread` / `vio_bench --heightmap`. |
 
 See **`docs/GROUND_CLUTTER.md`** for the ground-clutter/relief study (P1 failure baseline,
 RTF harness, options (c) steered scatter + (d) geometric relief, on the feature-gain/RTF-cost frontier).

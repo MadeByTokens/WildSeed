@@ -16,23 +16,75 @@ import xml.etree.ElementTree as ET
 OBJ = "/workspace/models/ground/mesh/terrain.obj"
 OUT = os.environ.get("OUT", "/workspace/worlds/terrain_scene.world")
 
-# terrain extent from the meshed OBJ (centred at origin)
-minx = miny = 1e18
-maxx = maxy = maxz = -1e18
-minz = 1e18
-verts = []
-with open(OBJ) as f:
-    for line in f:
-        if line.startswith("v "):
-            p = line.split()
-            x, y, z = float(p[1]), float(p[2]), float(p[3])
-            verts.append((x, y, z))
-            minx, maxx = min(minx, x), max(maxx, x)
-            miny, maxy = min(miny, y), max(maxy, y)
-            minz, maxz = min(minz, z), max(maxz, z)
-ext = max(maxx - minx, maxy - miny)
-half = ext / 2.0
-print(f"terrain extent={ext:.1f} m  z={minz:.1f}..{maxz:.1f}")
+# Ground source: a meshed OBJ (default) OR a gz <heightmap> (HEIGHTMAP env, option d2).
+# HEIGHTMAP="PNG,EXTENT_m,Z_m" renders a hi-res heightmap instead of the WildSeed mesh —
+# carries cm relief (Terra GPU-tessellates + LODs) at one-mesh cost. The rest of the file
+# (cameras, VIO_TRAJ) is unchanged; only the ground include + height lookup differ.
+HEIGHTMAP = os.environ.get("HEIGHTMAP")
+if HEIGHTMAP:
+    from PIL import Image
+    _hp, _he, _hz = HEIGHTMAP.split(",")
+    ext = float(_he)
+    _hz = float(_hz)
+    import numpy as _np
+    _hm = _np.asarray(Image.open(_hp).convert("L"), float) / 255.0 * _hz
+    _hn = _hm.shape[0]
+    half = ext / 2.0
+    minx = miny = -half
+    maxx = maxy = half
+    minz, maxz = float(_hm.min()), float(_hm.max())
+    verts = None
+
+    def _terrain_z(qx, qy):
+        # heightmap image is north-up (gz): row 0 = +Y edge, col 0 = -X edge.
+        u = (qx + half) / ext
+        v = (half - qy) / ext
+        c = min(max(int(round(u * (_hn - 1))), 0), _hn - 1)
+        r = min(max(int(round(v * (_hn - 1))), 0), _hn - 1)
+        return float(_hm[r, c])
+
+    _tex = ("<texture><size>2</size>"
+            "<diffuse>file:///workspace/models/ground/texture/ground_Color.png</diffuse>"
+            "<normal>file:///workspace/models/ground/texture/ground_NormalGL.png</normal>"
+            "</texture><sampling>2</sampling>")
+    _GROUND_INC = (
+        "<model name='heightmap_terrain'><static>true</static><link name='link'>"
+        + "".join(
+            f"<{k} name='{k}'><geometry><heightmap>"
+            f"<uri>file://{_hp}</uri><size>{ext} {ext} {_hz}</size><pos>0 0 0</pos>"
+            + (_tex if k == "visual" else "")
+            + "</heightmap></geometry></" + k + ">"
+            for k in ("collision", "visual"))
+        + "</link></model>")
+    print(f"HEIGHTMAP {_hn}x{_hn} ext={ext:.1f} m  z={minz:.2f}..{maxz:.2f}")
+else:
+    # terrain extent from the meshed OBJ (centred at origin)
+    minx = miny = 1e18
+    maxx = maxy = maxz = -1e18
+    minz = 1e18
+    verts = []
+    with open(OBJ) as f:
+        for line in f:
+            if line.startswith("v "):
+                p = line.split()
+                x, y, z = float(p[1]), float(p[2]), float(p[3])
+                verts.append((x, y, z))
+                minx, maxx = min(minx, x), max(maxx, x)
+                miny, maxy = min(miny, y), max(maxy, y)
+                minz, maxz = min(minz, z), max(maxz, z)
+    ext = max(maxx - minx, maxy - miny)
+    half = ext / 2.0
+
+    def _terrain_z(qx, qy):
+        bz, best = minz, 1e18
+        for (x, y, z) in verts:
+            d = (x - qx) ** 2 + (y - qy) ** 2
+            if d < best:
+                best, bz = d, z
+        return bz
+
+    _GROUND_INC = "<include><name>terrain</name><uri>model://ground</uri></include>"
+    print(f"terrain extent={ext:.1f} m  z={minz:.1f}..{maxz:.1f}")
 
 # oblique overview: stand off a corner, elevated, look at the centre/hilltop
 cx = -0.62 * ext
@@ -51,14 +103,6 @@ tz = maxz + 0.95 * ext
 # environment, not a textured hill. Sample the terrain height under the eye and aim
 # so the camera sits ~3 m above real ground and looks slightly down across a
 # populated swath. HERO_* env vars allow quick reframing without code edits.
-def _terrain_z(qx, qy):
-    bz, best = minz, 1e18
-    for (x, y, z) in verts:
-        d = (x - qx) ** 2 + (y - qy) ** 2
-        if d < best:
-            best, bz = d, z
-    return bz
-
 hex_ = float(os.environ.get("HERO_EX", "-0.28"))
 hey_ = float(os.environ.get("HERO_EY", "-0.10"))
 hax_ = float(os.environ.get("HERO_AX", "0.05"))
@@ -88,7 +132,7 @@ SHELL = f'''<?xml version='1.0' encoding='ASCII'?>
     <scene><ambient>0.5 0.5 0.5 1</ambient><background>0.78 0.86 0.94 1</background><grid>false</grid></scene>
     <light name='sun' type='directional'><cast_shadows>1</cast_shadows><pose>0 0 {tz:.1f} 0 0 0</pose>
       <diffuse>1 1 1 1</diffuse><specular>0.2 0.2 0.2 1</specular><direction>-0.4 0.3 -0.9</direction></light>
-    <include><name>terrain</name><uri>model://ground</uri></include>
+    {_GROUND_INC}
 '''
 parts = [SHELL]
 if os.environ.get("WATER") == "1":
