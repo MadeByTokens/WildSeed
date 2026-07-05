@@ -278,3 +278,19 @@ uniform(bland) vs patchy(rich).
 
 **Shippable recipe:** *patchy ground texture + steered objects (c, ~175) + drivable relief (d1),
 stacked* — on flat drivable ground, RTF ~1.0. Validate THIS (vs the bare-uniform failure) end-to-end.
+
+Reproduce the recipe world (in container):
+```
+# drivable relief terrain (mesh, mean slope ~9°) + rich patchy texture + steered corridor objects
+python3 -m wildseed.cli.main terraingen --preset flat --seed 3 --size 512 --pixel 0.6 \
+    --feature 8 --amplitude 2.5 --detail 1 --roughness 0.6 --octaves 6 --smooth 0 -o dem/relief.tif
+python3 -m wildseed.cli.main terrain --dem dem/relief.tif
+python3 -m wildseed.cli.main ground --mode patchy --biome grassland --seed 7 --res 4096
+python3 tools/corridor_map.py --out dem/corridor.png --half-width 8 --soft          # once
+python3 -m wildseed.cli.main generate --rig --rig-pose 0,0,2 \
+    --density-maps '{"tree":"dem/corridor.png","bush":"dem/corridor.png","rock":"dem/corridor.png"}' \
+    --density '{"tree":15,"bush":90,"rock":70,"grass":0,"sand":0}' --seed 7
+# vs the failure baseline: terraingen --preset flat --size 192 --pixel 1.6 ; ground --mode uniform ; generate (zeros)
+```
+The `--rig` world drives with `wildseed fly` + `wildseed record`; drop `--rig`/`--rig-pose` for a
+clean `vio_bench` render. This recipe + the bare-uniform baseline are the two worlds for Phase C.
