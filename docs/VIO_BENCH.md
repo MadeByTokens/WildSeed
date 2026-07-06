@@ -147,3 +147,9 @@ matches, i.e. the correspondences VIO can trust).
 - `tools/vio_seq.py` — temporal KLT *track length* (persistence; see the caveat above).
 - `terrain_scene.py` hooks: `VIO_CAMS=1` (drone+ground cams), `VIO_TRAJ="…"` (one camera
   per pose → whole trajectory in a single gz session).
+
+---
+
+**See also:** [VIO_LIO_FEATURES.md](VIO_LIO_FEATURES.md) — build & tune worlds that pass this
+benchmark (the `scenario --profile vio_lio` recipe + `wildseed benchmark`) · [GROUND_CLUTTER.md](GROUND_CLUTTER.md)
+— the study that produced the recipe.

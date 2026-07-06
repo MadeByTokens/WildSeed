@@ -161,12 +161,27 @@ robot with no segmentation camera, inject with `wildseed rig --inject --shell-on
 `configs/realism.yaml` keep foliage at FULL poly (30–60 MB visuals);
 `configs/sim-fast.yaml` is the RTF-lean conversion counterpart.
 
-**Docs:**
+**Docs:** start here and follow the trail into any topic.
 
+*Getting started*
 - **[docs/TUTORIAL.md](docs/TUTORIAL.md)** — build & randomize a world in 5 minutes
+
+*Generation*
 - **[docs/TERRAIN_GENERATOR.md](docs/TERRAIN_GENERATOR.md)** — `terraingen` reference (presets, all knobs, lakes)
 - **[docs/SCENARIOS.md](docs/SCENARIOS.md)** — the 6 demo scenarios + density tuning
+- **[docs/DOMAIN_RANDOMIZATION.md](docs/DOMAIN_RANDOMIZATION.md)** — texture / weather / layout randomization for perception training
+
+*Sensors & perception (VIO / LIO)*
+- **[docs/SENSOR_RIG.md](docs/SENSOR_RIG.md)** — the flying sensor rig: cameras, GPU-lidar, IMU, GPS, semantic labels (`rig` / `fly` / `record`)
+- **[docs/VIO_LIO_FEATURES.md](docs/VIO_LIO_FEATURES.md)** — **build & tune VIO/LIO-friendly worlds**: the one-command `scenario --profile vio_lio` recipe, the uniqueness knobs, and the `benchmark` measure→tune loop
+- **[docs/VIO_BENCH.md](docs/VIO_BENCH.md)** — how the camera data-association benchmark works (why *aliasing*, not feature count, predicts VIO failure)
+- **[docs/GROUND_CLUTTER.md](docs/GROUND_CLUTTER.md)** — the ground-clutter/relief study behind the recipe (evidence, the feature-gain / RTF-cost frontier)
+
+*Tooling & assets*
+- **[tools/README.md](tools/README.md)** — the `tools/*.py` dev & benchmark scripts (each `wildseed` command wraps one)
 - **[tools/ASSET_REGISTRY.md](tools/ASSET_REGISTRY.md)** — per-asset sources, licenses, and the asset-sourcing policy
+
+*Provenance*
 - **[docs/history/](docs/history/)** — superseded planning notes and reports, kept for provenance
 
 ### Reproducibility

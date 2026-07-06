@@ -5,10 +5,12 @@ running VIO (camera) and LIO (LIDAR) **without** dragging the sim's real-time fa
 down. Deliver switchable options — (c) steered scatter and (d) geometric relief — each judged
 on **feature-gain per RTF-cost**.
 
-Companion docs: `docs/VIO_BENCH.md` (data-association benchmark method), `tools/README.md`
-(VIO tools table). Plan of record: `scratchpad/PLAN_ground_clutter.md`.
+Companion docs: [VIO_LIO_FEATURES.md](VIO_LIO_FEATURES.md) (the user-facing recipe + benchmark
+guide this study produced), [VIO_BENCH.md](VIO_BENCH.md) (the data-association benchmark method),
+and [../tools/README.md](../tools/README.md) (the VIO tools table).
 
-All renders run in the GPU container (`wildseed:egl`); helper: `scratchpad/dgpu.sh '<CMD>'`.
+All renders run in the GPU container (`wildseed:egl`); see the repo README →
+*Gotchas, best practices & caveats* for the `docker run … wildseed:egl` invocation.
 
 ---
 
@@ -204,10 +206,11 @@ respected by both levers when sized right.
 
 The mesh path (d1) is Nyquist-limited to ≳1.2 m relief. d2 uses a gz `<heightmap>` (Ogre2
 Terra: GPU-tessellated + LOD'd render, one static collision surface) to carry **cm–dm relief on
-flat, drivable ground**. Spike: `scratchpad/build_d2.py` writes a 1025² heightmap (2¹⁰+1) over a
-60 m patch = **5.9 cm/px**, 0.35 m of multi-octave fractal roughness with the low frequencies
-removed (no macro tilt), skinned with the grassland texture, rig injected at 2 m. Benchmark
-support added: `vio_bench.py --heightmap PNG,EXTENT,Z` (+ a guarded `HEIGHTMAP` branch in
+flat, drivable ground**. The spike is now the shipped `wildseed heightmap` command (see
+[VIO_LIO_FEATURES.md](VIO_LIO_FEATURES.md) → *Standalone knobs*): it writes a 1025² heightmap
+(2¹⁰+1) over a 60 m patch = **5.9 cm/px**, 0.35 m of multi-octave fractal roughness with the low
+frequencies removed (no macro tilt), skinned with the grassland texture, rig injected at 2 m.
+Benchmark support: `vio_bench.py --heightmap PNG,EXTENT,Z` (+ a guarded `HEIGHTMAP` branch in
 `terrain_scene.py`) renders a heightmap through the same `vio_cam` trajectory as the mesh path.
 
 **§6 unknowns — both RESOLVED:**
